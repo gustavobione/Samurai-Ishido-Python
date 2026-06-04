@@ -4,6 +4,7 @@ import layout
 import capitulo_0 as prologo
 import capitulo_1
 import capitulo_2
+import capitulo_3
 
 import sistemas
 
@@ -118,6 +119,18 @@ def iniciar_jogo():
     layout.painel_status(jogador)
 
     layout.esperar_enter("[dim]Pressione Enter para iniciar o Capítulo 3...[/dim]")
+
+        # ================= CAPÍTULO 3 =================
+    layout.limpar_tela()
+    
+    jogador = capitulo_3.jogar(jogador)
+    if checar_morte(jogador):
+        return
+    
+    layout.limpar_tela()
+    layout.painel_status(jogador)
+
+    layout.esperar_enter("[dim]Pressione Enter para iniciar o Capítulo 4...[/dim]")
 
 if __name__ == "__main__":
     iniciar_jogo()
