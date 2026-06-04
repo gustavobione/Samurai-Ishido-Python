@@ -57,6 +57,7 @@ def checar_level_up(jogador):
 def gerar_reflexao(jogador, capitulo_atual, contexto):
     """Gera textos dinâmicos de meditação baseados nas ações do jogador."""
     texto = "[dim]Você fecha os olhos e revisita as memórias recentes...[/dim]\n"
+    
     if capitulo_atual == 1:
         if contexto == "vila_gelo":
             texto += "[italic cyan]O som do vento cortante nas ruínas... A frieza da armadura do Tenente Shiro... Você reflete sobre como a corrupção distorceu o legado do seu clã. Cada golpe que você deu foi um ato de misericórdia para com as almas perdidas na neve.[/italic cyan]"
@@ -64,6 +65,17 @@ def gerar_reflexao(jogador, capitulo_atual, contexto):
             texto += "[italic magenta]A escuridão esmagadora das Cavernas da Mandíbula ainda pesa nos seus ombros. Você se lembra do eco monstruoso batendo nas paredes de pedra, ajustando sua respiração para não ser engolido pelo medo.[/italic magenta]"
         else:
             texto += "[italic white]Os ensinamentos de Kazunari ecoam na sua mente. A lâmina é a extensão da alma.[/italic white]"
+            
+    elif capitulo_atual == 2:
+        if contexto == "copas_floresta":
+            texto += "[italic green]O farfalhar das folhas gigantes e as ilusões cruéis do dossel ainda testam sua sanidade. O encontro com o Daitengu ecoa em sua mente. Os ventos superiores lhe ensinaram que o equilíbrio mental é tão afiado quanto uma lâmina.[/italic green]"
+        elif contexto == "chao_floresta":
+            texto += "[italic yellow]O cheiro de morte e lama ácida ainda impregna suas roupas. Você tenta meditar, mas os gritos dos escravos no pântano e a monstruosidade do Nushi ainda assombram seus pensamentos. A crueldade deste império é um poço sem fundo.[/italic yellow]"
+            
+    elif capitulo_atual == 3:
+        if contexto == "perda_espada":
+            texto += "[italic red]O peso familiar nas suas mãos desapareceu. A Kagekiri se foi. Você tenta meditar, mas o luto pela lâmina do seu mestre ensurdece a sua mente. O calor do vulcão ainda queima sua pele, e sem o seu aço, você se sente completamente nu diante do Abismo.[/italic red]"
+    
     return texto
 
 def acampamento_fogueira(jogador, capitulo_atual=1, contexto=""):
