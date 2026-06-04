@@ -75,6 +75,10 @@ def gerar_reflexao(jogador, capitulo_atual, contexto):
     elif capitulo_atual == 3:
         if contexto == "perda_espada":
             texto += "[italic red]O peso familiar nas suas mãos desapareceu. A Kagekiri se foi. Você tenta meditar, mas o luto pela lâmina do seu mestre ensurdece a sua mente. O calor do vulcão ainda queima sua pele, e sem o seu aço, você se sente completamente nu diante do Abismo.[/italic red]"
+
+    elif capitulo_atual == 4:
+        if contexto == "espadas_forjadas":
+            texto += "[italic cyan]O peso de duas espadas na cintura é estranho, mas reconfortante. O Sol Negro emana calor, a Lua Prateada transpira gelo. Você sente que finalmente atingiu o ápice da sua linhagem. O medo sumiu. Resta apenas o alvo.[/italic cyan]"
     
     return texto
 
@@ -170,9 +174,19 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
         if carregando_ataque:
             layout.console.print("\n[bold yellow]⚠️ O INIMIGO ESTÁ CARREGANDO UM ATAQUE DEVASTADOR! ⚠️[/bold yellow]")
 
-        layout.console.print("\n[white]1 - [Atacar][/white] Corte de Kagekiri (Físico).")
+        # --- MENU DINÂMICO DE ARMAS E MAGIAS ---
+        if jogador.get("espada_quebrada", False):
+            layout.console.print("\n[white]1 - [Atacar][/white] Soco com o cabo inútil (Dano Mínimo).")
+        elif jogador.get("duas_espadas_longas", False):
+            layout.console.print("\n[white]1 - [Arte Nitoryu: Eclipse][/white] Atacar com o Sol Negro e a Lua Prateada (Dano Maciço + Roubo de Vida).")
+        else:
+            layout.console.print("\n[white]1 - [Atacar][/white] Corte de Kagekiri (Físico).")
+
         layout.console.print("[cyan]2 - [Passos Fantasmas][/cyan] Esquiva perfeita e ataque nas costas. ([dim]Custo: 10 Éter[/dim]).")
-        if "Lâmina de Gelo" in jogador.get("habilidades", []):
+        
+        if "Corte do Vazio" in jogador.get("habilidades", []):
+            layout.console.print("[magenta]3 - [Corte do Vazio][/magenta] Rasga o espaço, ignora defesa e armadura. ([dim]Custo: 15 Éter[/dim]).")
+        elif "Lâmina de Gelo" in jogador.get("habilidades", []) and not jogador.get("espada_quebrada", False):
             layout.console.print("[blue]3 - [Lâmina de Gelo][/blue] Dano elemental (Gelo) e congela o alvo. ([dim]Custo: 15 Éter[/dim]).")
         
         if not inimigo_analisado:
@@ -185,9 +199,9 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
         turno_inimigo = True
         inimigo_congelado = False
         
-        # 1. ATAQUE NORMAL
+        # 1. ATAQUE NORMAL / QUEBRADO / ECLIPSE
         if acao == "1":
-            layout.imprimir_lento("[white]Você avança empunhando a Kagekiri![/white]")
+            layout.imprimir_lento("[white]Você avança para o confronto direto![/white]")
             d20 = random.randint(1, 20)
             jogador.setdefault("atributos_usados", set()).add("kenjutsu")
             total_ataque = d20 + jogador['kenjutsu']
@@ -196,10 +210,21 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
             time.sleep(1)
             
             if total_ataque >= defesa_inimigo:
-                dano_base = random.randint(3, 10) + (jogador['kenjutsu'] // 3)
+                if jogador.get("espada_quebrada", False):
+                    dano_base = random.randint(1, 3)
+                    layout.imprimir_lento("[red]A arma está quebrada! Você causa danos contundentes fracos.[/red]")
+                elif jogador.get("duas_espadas_longas", False):
+                    bonus_arma = jogador.get("bonus_dano_arma", 6)
+                    dano_base = random.randint(5, 12) + (jogador['kenjutsu'] // 2) + bonus_arma
+                    cura_lunar = dano_base // 2
+                    jogador["vitalidade"] = min(max_hp, jogador["vitalidade"] + cura_lunar)
+                    layout.imprimir_lento(f"[cyan]O Sol Negro queima! A Lua Prateada brilha! A essência do inimigo cura você em +{cura_lunar} HP.[/cyan]")
+                else:
+                    dano_base = random.randint(3, 10) + (jogador['kenjutsu'] // 3)
+                
                 dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
                 hp_inimigo -= dano_final
-                layout.imprimir_lento(f"[bold green]ACERTO![/bold green] Você rasgou a defesa inimiga causando {dano_final} de dano.")
+                layout.imprimir_lento(f"[bold green]ACERTO![/bold green] Você causou {dano_final} de dano.")
             else:
                 layout.imprimir_lento("[bold red]ERRO![/bold red] O inimigo bloqueou ou desviou do seu ataque.")
                 
@@ -207,37 +232,52 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
         elif acao == "2":
             if eter_atual >= 10:
                 jogador["eter"] -= 10
-                jogador.setdefault("atributos_usados", set()).add("destreza")
-                jogador.setdefault("atributos_usados", set()).add("eter")
+                jogador.setdefault("atributos_usados", set()).update(["destreza", "eter"])
                 layout.imprimir_lento("[bold cyan]PASSOS FANTASMAS![/bold cyan] Você vira névoa, desviando e surgindo nas costas do inimigo.")
                 turno_inimigo = False
                 
-                dano_base = random.randint(5, 12) + (jogador['kenjutsu'] // 3)
+                if jogador.get("espada_quebrada", False):
+                    dano_base = random.randint(2, 5)
+                else:
+                    dano_base = random.randint(5, 12) + (jogador['kenjutsu'] // 3)
+                    
                 dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
                 hp_inimigo -= dano_final
-                layout.imprimir_lento(f"[green]Apunhalada crítica causando {dano_final} de dano![/green]")
+                layout.imprimir_lento(f"[green]Ataque furtivo pelas costas causando {dano_final} de dano![/green]")
             else:
                 layout.imprimir_lento("[bold red]FALHA![/bold red] Sem Éter, seus músculos travam.")
                 defesa_jogador -= 5 
                 
-        # 3. LÂMINA DE GELO
-        elif acao == "3" and "Lâmina de Gelo" in jogador.get("habilidades", []):
-            if eter_atual >= 15:
-                jogador["eter"] -= 15
-                jogador.setdefault("atributos_usados", set()).add("eter")
-                layout.imprimir_lento("[bold blue]LÂMINA DE GELO![/bold blue] A Kagekiri congela o ar.")
-                
-                dano_base = random.randint(8, 15) + (jogador['conhecimento'] // 3)
-                dano_final = aplicar_multiplicador(dano_base, "Gelo", fraqueza, resistencia)
-                hp_inimigo -= dano_final
-                
-                layout.imprimir_lento(f"[blue]Causou {dano_final} de dano de Gelo. O inimigo está CONGELADO![/blue]")
-                inimigo_congelado = True
-                turno_inimigo = False
-                carregando_ataque = False 
+        # 3. LÂMINA DE GELO / CORTE DO VAZIO
+        elif acao == "3":
+            if "Corte do Vazio" in jogador.get("habilidades", []):
+                if eter_atual >= 15:
+                    jogador["eter"] -= 15
+                    jogador.setdefault("atributos_usados", set()).add("eter")
+                    layout.imprimir_lento("[bold magenta]CORTE DO VAZIO![/bold magenta] O Sol Negro rasga o próprio espaço-tempo. A CA do inimigo é ignorada!")
+                    dano_base = random.randint(10, 20) + (jogador['kenjutsu'] // 2)
+                    hp_inimigo -= dano_base
+                    layout.imprimir_lento(f"[magenta]Causou {dano_base} de dano absoluto inbloqueável![/magenta]")
+                else:
+                    layout.imprimir_lento("[bold red]FALHA![/bold red] Éter insuficiente para dobrar o espaço.")
+            
+            elif "Lâmina de Gelo" in jogador.get("habilidades", []) and not jogador.get("espada_quebrada", False):
+                if eter_atual >= 15:
+                    jogador["eter"] -= 15
+                    jogador.setdefault("atributos_usados", set()).add("eter")
+                    layout.imprimir_lento("[bold blue]LÂMINA DE GELO![/bold blue] A arma congela o ar.")
+                    dano_base = random.randint(8, 15) + (jogador['conhecimento'] // 3)
+                    dano_final = aplicar_multiplicador(dano_base, "Gelo", fraqueza, resistencia)
+                    hp_inimigo -= dano_final
+                    layout.imprimir_lento(f"[blue]Causou {dano_final} de dano elemental. O inimigo está CONGELADO![/blue]")
+                    inimigo_congelado = True
+                    turno_inimigo = False
+                    carregando_ataque = False 
+                else:
+                    layout.imprimir_lento("[bold red]FALHA![/bold red] Falta Éter.")
             else:
-                layout.imprimir_lento("[bold red]FALHA![/bold red] Falta Éter. A lâmina apenas solta fumaça fria.")
-                
+                layout.imprimir_lento("[dim]Ação inválida.[/dim]")
+
         # 4. ANALISAR
         elif acao == "4" and not inimigo_analisado:
             if eter_atual >= 5:
@@ -252,12 +292,12 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
         # 5. GOLPE SUJO (MECÂNICA DE HONRA)
         elif acao == "5":
             jogador["honra"] -= 2
-            layout.imprimir_lento("[bold yellow]DESONRA![/bold yellow] Você chuta terra e detritos no rosto do oponente, quebrando o código samurai.")
-            dano_base = random.randint(5, 10)
+            layout.imprimir_lento("[bold yellow]DESONRA![/bold yellow] Você joga terra e detritos no rosto do oponente, quebrando o código samurai.")
+            dano_base = random.randint(3, 8) if jogador.get("espada_quebrada", False) else random.randint(5, 10)
             dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
             hp_inimigo -= dano_final
             layout.imprimir_lento(f"[green]O inimigo fica cego momentaneamente! Você acerta um golpe covarde causando {dano_final} de dano.[/green]")
-            carregando_ataque = False # Interrompe ataques do inimigo
+            carregando_ataque = False 
 
         else:
             layout.imprimir_lento("[dim]Ação inválida. Você hesitou e perdeu sua chance.[/dim]")
@@ -299,7 +339,10 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
                         layout.imprimir_lento(f"[bold red]O {nome_inimigo} acerta o golpe! Você sofre {dano_sofrido} de dano.[/bold red]")
                         jogador["vitalidade"] -= dano_sofrido
                     else:
-                        layout.imprimir_lento(f"[blue]Você bloqueia e desvia o ataque do {nome_inimigo} com sucesso![/blue]")
+                        if jogador.get("duas_espadas_longas", False):
+                            layout.imprimir_lento(f"[blue]Você cruza o Sol e a Lua e bloqueia o ataque do {nome_inimigo} perfeitamente![/blue]")
+                        else:
+                            layout.imprimir_lento(f"[blue]Você bloqueia e desvia o ataque do {nome_inimigo} com sucesso![/blue]")
         
         defesa_jogador = 10 + mod_defesa 
             
