@@ -2,6 +2,7 @@
 import sys
 import layout
 import capitulo_0 as prologo
+import capitulo_1
 
 def checar_morte(jogador):
     if jogador["vitalidade"] <= 0:
@@ -90,6 +91,19 @@ def iniciar_jogo():
     
     layout.console.print("\n[dim]Pressione Enter para iniciar o Capítulo 1...[/dim]")
     input()
+
+    # ================= CAPÍTULO 1 =================
+    layout.limpar_tela()
+    
+    jogador = capitulo_1.jogar(jogador)
+    if checar_morte(jogador):
+        return
+    
+    # Exibe a Ficha atualizada após os eventos do Capítulo 1 (ganhos de itens, perdas de HP, etc)
+    layout.limpar_tela()
+    layout.painel_status(jogador)
+
+    layout.esperar_enter("[dim]Pressione Enter para iniciar o Capítulo 2...[/dim]")
 
 if __name__ == "__main__":
     iniciar_jogo()

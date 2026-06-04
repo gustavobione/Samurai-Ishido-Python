@@ -1,260 +1,316 @@
-# sistemas.py
-import time
 import random
+import time
+import layout
 
-def slow_print(texto, atraso=0.03):
-    """Imprime o texto aos poucos para dar um efeito de RPG de terminal."""
-    for char in texto:
-        print(char, end="", flush=True)
-        time.sleep(atraso)
-    print("\n")
+# ==========================================
+# PROGRESSÃO E LEVEL UP
+# ==========================================
+def checar_level_up(jogador):
+    """Verifica se o jogador tem XP suficiente e faz a evolução. Guarda o XP excedente."""
+    nivel_atual = jogador.get("nivel", 1)
+    xp_atual = jogador.get("xp", 0)
+    
+    # Lógica Exponencial de XP: 100, 200, 400, 800...
+    xp_necessario = 100 * (2 ** (nivel_atual - 1)) 
 
-def menu_evolucao(jogador):
-    """Exibe as opções de evolução, aumenta o HP máximo e cura um valor específico."""
-    
-    # 1. EVOLUÇÃO DO HP MÁXIMO (Rola 1d6 e adiciona permanentemente)
-    aumento_hp = random.randint(1, 6)
-    
-    # Se o jogador não tinha o atributo "max_vitalidade", define agora baseado na vitalidade atual.
-    max_vitalidade_atual = jogador.get("max_vitalidade", jogador.get("vitalidade", 15))
-    jogador["max_vitalidade"] = max_vitalidade_atual + aumento_hp
-    
-    # 2. CURA DO DESCANSO (Rola 1d6 extra porque ele parou na fogueira)
-    cura_descanso = random.randint(1, 6)
-    
-    # Aumenta a vida atual com o que ganhou de máximo + o bônus do descanso
-    cura_total = aumento_hp + cura_descanso
-    jogador["vitalidade"] += cura_total
-    
-    # Trava a vida atual para não ultrapassar o novo teto máximo
-    if jogador["vitalidade"] > jogador["max_vitalidade"]:
-        jogador["vitalidade"] = jogador["max_vitalidade"]
-    
-    print("\n[Meditação Concluída]")
-    print(f"Sua resistência ao mundo aumentou! (+{aumento_hp} de HP Máximo)")
-    print(f"O calor da fogueira fechou feridas superficiais (+{cura_descanso} de Cura).")
-    print(f"♥ Seu HP agora é: {jogador['vitalidade']}/{jogador['max_vitalidade']}")
+    # Usa 'while' caso o jogador ganhe muito XP de uma vez e suba mais de um nível
+    subiu_de_nivel = False
+    while jogador["xp"] >= xp_necessario:
+        jogador["nivel"] += 1
+        jogador["xp"] -= xp_necessario # O excedente continua no jogador["xp"]
+        nivel_atual = jogador["nivel"]
+        xp_necessario = 100 * (2 ** (nivel_atual - 1))
+        subiu_de_nivel = True
+        
+        layout.imprimir_lento(f"\n[bold yellow]*** O SANGUE DOS SHIRO FERVE. VOCÊ ATINGIU O NÍVEL {nivel_atual}! ***[/bold yellow]")
+        
+        # Rolagens de aumento de status gerais (1d3 para atributos, 1d6 para pools)
+        add_ken = random.randint(1, 3)
+        add_des = random.randint(1, 3)
+        add_con = random.randint(1, 3)
+        add_hp = random.randint(3, 6)
+        add_eter = random.randint(3, 6)
+        
+        jogador["kenjutsu"] += add_ken
+        jogador["destreza"] += add_des
+        jogador["conhecimento"] += add_con
+        
+        jogador["max_vitalidade"] += add_hp
+        jogador["vitalidade"] = jogador["max_vitalidade"] # Cura total ao upar
+        
+        if "max_eter" not in jogador:
+            jogador["max_eter"] = jogador.get("eter", 50)
+            
+        jogador["max_eter"] += add_eter
+        jogador["eter"] = jogador["max_eter"] # Restaura Éter ao upar
+        
+        layout.console.print("[cyan]Seu corpo e mente se adaptaram às atrocidades deste império:[/cyan]")
+        layout.console.print(f"[white]Kenjutsu +{add_ken}[/white] | [green]Destreza +{add_des}[/green] | [magenta]Conhecimento +{add_con}[/magenta]")
+        layout.console.print(f"[red]HP Máximo +{add_hp}[/red] | [cyan]Éter Máximo +{add_eter}[/cyan]")
+        layout.esperar_enter("[dim]Sua jornada continua mais forte...[/dim]")
 
-    print("\nAo olhar para as chamas, em qual ensinamento você foca para aprimorar seu espírito?")
-    print("1 - [O Caminho da Espada] O peso do combate real afiou seus cortes. (+3 em Kenjutsu)")
-    print("2 - [O Caminho do Vento] Escapar da morte acelerou seus reflexos. (+3 em Destreza)")
-    print("3 - [O Caminho da Mente] Os horrores do mundo expandiram sua compreensão. (+3 em Conhecimento)")
-
-    escolha = input("\nEscolha sua evolução (1, 2 ou 3): ").strip()
-
-    if escolha == "1":
-        jogador["kenjutsu"] = jogador.get("kenjutsu", 10) + 3
-        slow_print("\nSeus braços estão mais firmes. O metal parece menos pesado e seus golpes cortam o ar com facilidade.")
-    elif escolha == "2":
-        jogador["destreza"] = jogador.get("destreza", 10) + 3
-        slow_print("\nSeu corpo memorizou as garras do perigo. Você sente que pode se mover pelas sombras como um fantasma.")
-    elif escolha == "3":
-        jogador["conhecimento"] = jogador.get("conhecimento", 10) + 3
-        slow_print("\nA escuridão não assusta mais. Os padrões da feitiçaria e as fraquezas dos Yokais agora fluem na sua mente.")
-    else:
-        slow_print("\nVocê apenas esvazia a mente. A intuição cega guiará seus próximos passos de forma equilibrada.")
-        jogador["kenjutsu"] = jogador.get("kenjutsu", 10) + 1
-        jogador["destreza"] = jogador.get("destreza", 10) + 1
-        jogador["conhecimento"] = jogador.get("conhecimento", 10) + 1
-    
     return jogador
 
-def evoluir_capitulo_1(jogador):
-    print("\n" + "="*60)
-    slow_print("                    O DESCANSO DO GUERREIRO - FIM DO ATO I")
-    print("="*60 + "\n")
+# ==========================================
+# SISTEMA DE FOGUEIRA
+# ==========================================
+def gerar_reflexao(jogador, capitulo_atual, contexto):
+    """Gera textos dinâmicos de meditação baseados nas ações do jogador."""
+    texto = "[dim]Você fecha os olhos e revisita as memórias recentes...[/dim]\n"
+    if capitulo_atual == 1:
+        if contexto == "vila_gelo":
+            texto += "[italic cyan]O som do vento cortante nas ruínas... A frieza da armadura do Tenente Shiro... Você reflete sobre como a corrupção distorceu o legado do seu clã. Cada golpe que você deu foi um ato de misericórdia para com as almas perdidas na neve.[/italic cyan]"
+        elif contexto == "caverna":
+            texto += "[italic magenta]A escuridão esmagadora das Cavernas da Mandíbula ainda pesa nos seus ombros. Você se lembra do eco monstruoso batendo nas paredes de pedra, ajustando sua respiração para não ser engolido pelo medo.[/italic magenta]"
+        else:
+            texto += "[italic white]Os ensinamentos de Kazunari ecoam na sua mente. A lâmina é a extensão da alma.[/italic white]"
+    return texto
 
-    rota = jogador.get("rota_cap1", "estrada")
-
-    if rota == "estrada":
-        slow_print(
-            "Você encontra um casebre de madeira apodrecida nos limites da Vila de Kiku, "
-            "afastado o bastante para acender uma pequena fogueira que não solta fumaça na neblina."
-        )
-        slow_print(
-            "A exaustão da sua primeira batalha real cobra o preço nos seus músculos. Você limpa o "
-            "sangue negro dos Guardas de Cinza da sua lâmina usando um pano velho."
-        )
-        slow_print(
-            "Os olhos vazios e aterrorizados dos camponeses da vila assombram sua mente. Kazunari, "
-            "seu mestre, falava de um império glorioso guiado pela justiça, mas a realidade que você "
-            "encontrou é construída sobre lama, corrupção e escravidão humana."
-        )
-    elif rota == "caverna":
-        slow_print(
-            "Abrigado em uma fenda estreita no desfiladeiro vertical, o vento noturno uiva do lado "
-            "de fora como milhares de espíritos em agonia. Você usa o que resta das suas forças "
-            "para acender uma fogueira minúscula com fungos secos."
-        )
-        slow_print(
-            "O cheiro pútrido de enxofre e o lodo ácido que o Tsuchigumo expeliu ainda impregnam suas roupas. "
-            "Enfrentar uma fera demoníaca daquele tamanho no escuro absoluto provou que as lendas de horror "
-            "que seu mestre contava eram todas reais... e letais."
-        )
-        slow_print(
-            "Você percebeu da pior maneira que o mundo lá fora não pertence mais aos homens; ele foi entregue aos monstros."
-        )
-
-    slow_print(
-        "A teoria dos treinos no topo da montanha congelada tornou-se a brutal prática da sobrevivência. "
-        "Sua mente e seu corpo estão sendo forçados a se adaptar rapidamente à crueldade do império de Kuroi Shin'en."
+def acampamento_fogueira(jogador, capitulo_atual=1, contexto=""):
+    """Sistema dividido entre Descansar (Heal) e Meditar (Buff/Up de atributo)."""
+    layout.cabecalho("O DESCANSO DO GUERREIRO", "O calor da fogueira afasta o abismo")
+    
+    layout.imprimir_lento(
+        "Você encontra um local seguro, acende uma fogueira escondida e senta. "
+        "A Kagekiri repousa no seu colo. O fogo estala, e você tem um momento de paz."
     )
+    
+    while True:
+        layout.console.print("\n[bold]O que você fará esta noite?[/bold]")
+        layout.console.print("[white]1 - [Descansar][/white] Limpar as feridas e dormir (Restaura HP e Éter).")
+        layout.console.print("[cyan]2 - [Meditar][/cyan] Refletir sobre as lutas de hoje (Tenta evoluir atributos usados).")
+        
+        layout.limpar_buffer_teclado()
+        escolha = input("\nEscolha (1 ou 2): ").strip()
+        
+        if escolha == "1":
+            cura = random.randint(15, 25)
+            max_vit = jogador.get("max_vitalidade", 15)
+            jogador["vitalidade"] = min(max_vit, jogador.get("vitalidade", 0) + cura)
+            jogador["eter"] = jogador.get("max_eter", 50)
+            layout.imprimir_lento(f"\n[green]Você tem um sono pesado e restaurador. HP curado em {cura}. Éter totalmente restaurado.[/green]")
+            break
+            
+        elif escolha == "2":
+            layout.imprimir_lento(f"\n{gerar_reflexao(jogador, capitulo_atual, contexto)}")
+            
+            atributos_usados = jogador.get("atributos_usados", set())
+            if atributos_usados:
+                teve_aumento = False
+                for attr in atributos_usados:
+                    if random.randint(1, 100) <= 50: # 50% de chance na meditação
+                        jogador[attr] += 1
+                        layout.imprimir_lento(f"[bold green]Sua clareza mental aprimora seus instintos. {attr.capitalize()} subiu +1 permanentemente![/bold green]")
+                        teve_aumento = True
+                if not teve_aumento:
+                    layout.imprimir_lento("[dim]Você medita profundamente, mas sente que precisa de mais desafios práticos para dominar esses movimentos.[/dim]")
+            else:
+                layout.imprimir_lento("[dim]Você tenta meditar, mas não vivenciou experiências suficientes hoje para tirar novas lições.[/dim]")
+            
+            # Limpa os atributos para o próximo ciclo
+            jogador["atributos_usados"].clear()
+            break
+        else:
+            layout.console.print("[red]Escolha inválida.[/red]")
 
-    jogador = menu_evolucao(jogador)
+    layout.esperar_enter("[dim]A fogueira apaga. É hora de seguir jornada...[/dim]")
     return jogador
 
-def evoluir_capitulo_2(jogador):
-    print("\n" + "="*60)
-    slow_print("                    O DESCANSO DO GUERREIRO - FIM DO ATO II")
-    print("="*60 + "\n")
+# ==========================================
+# MOTOR DE COMBATE CENTRALIZADO
+# ==========================================
+def aplicar_multiplicador(dano_base, elemento, fraqueza, resistencia):
+    """Calcula fraquezas e resistências"""
+    if elemento == fraqueza and fraqueza != "Nenhuma":
+        layout.console.print(f"[bold yellow]FRAQUEZA EXPLORADA! Dano Duplo! ({elemento})[/bold yellow]")
+        return int(dano_base * 2)
+    elif elemento == resistencia and resistencia != "Nenhuma":
+        layout.console.print(f"[dim]O inimigo resiste ao ataque... Dano Reduzido! ({elemento})[/dim]")
+        return int(dano_base * 0.5)
+    return dano_base
 
-    rota = jogador.get("rota_cap2", "chao")
-
-    if rota == "chao":
-        slow_print(
-            "Você se abriga sob as raízes colossais e retorcidas no limite leste da Floresta Murmurante. "
-            "O ar aqui já não cheira a musgo, mas carrega o bafo quente e sufocante que anuncia a proximidade "
-            "da Província vulcânica de Tetsu."
-        )
-        slow_print(
-            "Sentado na terra seca, você raspa a lama do pântano e o sangue demoníaco de suas botas. "
-            "A lembrança dos Ronins corrompidos que abandonaram o código samurai por poder e "
-            "o som do chicote do Kappa escravista ainda queimam em seu peito."
-        )
-        slow_print(
-            "A desonra manchou o mundo inteiro, e o peso de ser a única lâmina capaz de limpá-la começa a pesar nos seus ombros."
-        )
-    elif rota == "copas":
-        slow_print(
-            "Você decide não arriscar o chão e descansa amarrado aos galhos mais altos do dossel, pouco antes "
-            "que a imensidão verde dê lugar às rochas afiadas e negras do basalto vulcânico."
-        )
-        slow_print(
-            "O calor distante das forjas do vulcão já aquece a noite fria, mas são as provações do dia que o mantêm acordado. "
-            "As ilusões cruéis da feitiçaria, que usaram a voz e o rosto do seu velho mestre para tentar matá-lo, "
-            "foram um teste de fogo para o seu coração."
-        )
-        slow_print(
-            "E o duelo silencioso e violento com o imponente Daitengu provou uma verdade complexa: nem todos os Yokais "
-            "são servos malignos de Kuroi. Alguns apenas seguem suas próprias, e antigas, leis de vento e aço."
-        )
-
-    slow_print(
-        "Com a grandiosidade maligna da Floresta para trás, seu espírito forjou uma nova e impenetrável camada de resiliência. "
-        "Você respira fundo as cinzas no ar, fundindo suas memórias em pura força de vontade."
-    )
-
-    jogador = menu_evolucao(jogador)
-    return jogador
-
-def evoluir_capitulo_3(jogador):
-    print("\n" + "="*60)
-    slow_print("                    O DESCANSO DO GUERREIRO - A QUEDA")
-    print("="*60 + "\n")
-
-    slow_print(
-        "Encharcado pela neblina gelada da Província de Mizu, seus dedos trêmulos e queimados mal conseguem "
-        "produzir a faísca necessária para acender a lenha úmida. O calor minguado do fogo é o único conforto."
-    )
-    slow_print(
-        "Com lágrimas de frustração e dor, você abre um trapo sujo sobre o barro. Lentamente, você alinha os "
-        "pedaços rachados, estilhaçados e escuros da sagrada Kagekiri no chão."
-    )
-    slow_print(
-        "A fumaça, o horror, as lutas contra os Onis gigantes e o magma inclemente das Forjas de Tetsu "
-        "cobraram o preço mais alto possível. Pela primeira vez desde que você era uma criança chorando nos braços "
-        "de Kazunari, você não tem o aço divino para te proteger. Você está vulnerável."
-    )
-    slow_print(
-        "A escuridão dos pântanos ao seu redor murmura com as vozes de criaturas aquáticas à espreita, "
-        "farejando o cheiro do seu sangue."
-    )
-    slow_print(
-        "Mas a dor acorda algo primordial. Um samurai desarmado ainda é, e sempre será, um samurai. "
-        "O desespero absoluto que você sente agora não o consome, mas aguça seus sentidos para a "
-        "sobrevivência como nenhuma vitória épica jamais fez."
-    )
+def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano, max_dano, xp_recompensa, fraqueza="Nenhuma", resistencia="Nenhuma"):
+    layout.imprimir_lento(f"\n[bold red]COMBATE INICIADO: {nome_inimigo.upper()}[/bold red]")
+    layout.tocar_sfx("audio/batalha_inicio.mp3")
     
-    return menu_evolucao(jogador)
+    mod_defesa = (jogador.get("destreza", 10) + jogador.get("kenjutsu", 10)) // 4
+    defesa_jogador = 10 + mod_defesa
+    bonus_ataque_inimigo = max_dano // 2
+    
+    inimigo_analisado = False
+    carregando_ataque = False
+    
+    while hp_inimigo > 0 and jogador["vitalidade"] > 0:
+        layout.divisoria()
+        max_hp = jogador.get("max_vitalidade", jogador["vitalidade"])
+        eter_atual = jogador.get("eter", 0)
+        
+        ca_mostrado = defesa_inimigo if inimigo_analisado else "??"
+        hp_mostrado = hp_inimigo if inimigo_analisado else "??"
+        fraq_mostrada = fraqueza if inimigo_analisado else "??"
+        res_mostrada = resistencia if inimigo_analisado else "??"
+        
+        layout.console.print(f"[red]HP:[/red] {jogador['vitalidade']}/{max_hp} | [blue]Defesa:[/blue] {defesa_jogador} | [cyan]Éter:[/cyan] {eter_atual}/{jogador.get('max_eter', 50)} | [yellow]Honra:[/yellow] {jogador.get('honra', 10)}")
+        layout.console.print(f"[bold red]Inimigo:[/bold red] {nome_inimigo} | [red]HP:[/red] {hp_mostrado} | [blue]CA:[/blue] {ca_mostrado}")
+        if inimigo_analisado:
+            layout.console.print(f"[dim]Fraqueza:[/dim] [yellow]{fraq_mostrada}[/yellow] | [dim]Resistência:[/dim] [white]{res_mostrada}[/white]")
+        
+        if carregando_ataque:
+            layout.console.print("\n[bold yellow]⚠️ O INIMIGO ESTÁ CARREGANDO UM ATAQUE DEVASTADOR! ⚠️[/bold yellow]")
 
-def evoluir_capitulo_4(jogador):
-    print("\n" + "="*60)
-    slow_print("                    O DESCANSO DO GUERREIRO - A TEMPESTADE PRESTES A CAIR")
-    print("="*60 + "\n")
+        layout.console.print("\n[white]1 - [Atacar][/white] Corte de Kagekiri (Físico).")
+        layout.console.print("[cyan]2 - [Passos Fantasmas][/cyan] Esquiva perfeita e ataque nas costas. ([dim]Custo: 10 Éter[/dim]).")
+        if "Lâmina de Gelo" in jogador.get("habilidades", []):
+            layout.console.print("[blue]3 - [Lâmina de Gelo][/blue] Dano elemental (Gelo) e congela o alvo. ([dim]Custo: 15 Éter[/dim]).")
+        
+        if not inimigo_analisado:
+            layout.console.print("[magenta]4 - [Analisar][/magenta] Revela HP, CA, Fraquezas e Resistências. ([dim]Custo: 5 Éter[/dim]).")
+            
+        layout.console.print("[yellow]5 - [Golpe Sujo][/yellow] Jogar areia nos olhos (Ataque garantido, mas CUSTA -2 Honra).")
+        
+        layout.limpar_buffer_teclado()
+        acao = input("\nAção: ").strip()
+        turno_inimigo = True
+        inimigo_congelado = False
+        
+        # 1. ATAQUE NORMAL
+        if acao == "1":
+            layout.imprimir_lento("[white]Você avança empunhando a Kagekiri![/white]")
+            d20 = random.randint(1, 20)
+            jogador.setdefault("atributos_usados", set()).add("kenjutsu")
+            total_ataque = d20 + jogador['kenjutsu']
+            
+            layout.console.print(f"[dim]Rolando Ataque: d20 ({d20}) + Kenjutsu ({jogador['kenjutsu']}) = {total_ataque} vs CA {ca_mostrado}[/dim]")
+            time.sleep(1)
+            
+            if total_ataque >= defesa_inimigo:
+                dano_base = random.randint(3, 10) + (jogador['kenjutsu'] // 3)
+                dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
+                hp_inimigo -= dano_final
+                layout.imprimir_lento(f"[bold green]ACERTO![/bold green] Você rasgou a defesa inimiga causando {dano_final} de dano.")
+            else:
+                layout.imprimir_lento("[bold red]ERRO![/bold red] O inimigo bloqueou ou desviou do seu ataque.")
+                
+        # 2. PASSOS FANTASMAS
+        elif acao == "2":
+            if eter_atual >= 10:
+                jogador["eter"] -= 10
+                jogador.setdefault("atributos_usados", update(["destreza", "eter"]))
+                layout.imprimir_lento("[bold cyan]PASSOS FANTASMAS![/bold cyan] Você vira névoa, desviando e surgindo nas costas do inimigo.")
+                turno_inimigo = False
+                
+                dano_base = random.randint(5, 12) + (jogador['kenjutsu'] // 3)
+                dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
+                hp_inimigo -= dano_final
+                layout.imprimir_lento(f"[green]Apunhalada crítica causando {dano_final} de dano![/green]")
+            else:
+                layout.imprimir_lento("[bold red]FALHA![/bold red] Sem Éter, seus músculos travam.")
+                defesa_jogador -= 5 
+                
+        # 3. LÂMINA DE GELO
+        elif acao == "3" and "Lâmina de Gelo" in jogador.get("habilidades", []):
+            if eter_atual >= 15:
+                jogador["eter"] -= 15
+                jogador.setdefault("atributos_usados", set()).add("eter")
+                layout.imprimir_lento("[bold blue]LÂMINA DE GELO![/bold blue] A Kagekiri congela o ar.")
+                
+                dano_base = random.randint(8, 15) + (jogador['conhecimento'] // 3)
+                dano_final = aplicar_multiplicador(dano_base, "Gelo", fraqueza, resistencia)
+                hp_inimigo -= dano_final
+                
+                layout.imprimir_lento(f"[blue]Causou {dano_final} de dano de Gelo. O inimigo está CONGELADO![/blue]")
+                inimigo_congelado = True
+                turno_inimigo = False
+                carregando_ataque = False 
+            else:
+                layout.imprimir_lento("[bold red]FALHA![/bold red] Falta Éter. A lâmina apenas solta fumaça fria.")
+                
+        # 4. ANALISAR
+        elif acao == "4" and not inimigo_analisado:
+            if eter_atual >= 5:
+                jogador["eter"] -= 5
+                jogador.setdefault("atributos_usados", set()).add("conhecimento")
+                inimigo_analisado = True
+                layout.imprimir_lento("[bold magenta]Focando o Éter em seus olhos, o mundo desacelera...[/bold magenta]")
+                layout.imprimir_lento("As correntes de energia revelam os segredos biológicos e espirituais do alvo.")
+            else:
+                layout.imprimir_lento("[red]Falta Éter para focar a visão mística.[/red]")
 
-    slow_print(
-        "A poucos metros do Rio purificado, você acende uma fogueira fora da Caverna do Mestre Kajiya. "
-        "O cheiro de sândalo e água limpa enche a noite. A luz laranja e vibrante das chamas reflete diretamente "
-        "nas lâminas gêmeas que repousam elegantemente no seu colo."
-    )
-    slow_print(
-        "O Sol Negro exala um calor letal, enquanto a Lua Prateada parece derramar uma luz líquida e calmante. "
-        "Sobreviver à lama, aos enigmas do Dragão e à crueldade sem a proteção da sua espada original ensinou-lhe a paciência "
-        "e a maleabilidade incontrolável da água."
-    )
-    slow_print(
-        "A fraqueza momentânea lapidou o seu orgulho cego, transformando-o em foco absoluto. E agora, com a glória "
-        "do estilo Nitoryu fluindo como uma tempestade retida em seus dois braços, você sabe que não há Yokai, "
-        "corrupção, feitiçaria ou lorde no mundo capaz de deter a sua caminhada."
-    )
-    slow_print(
-        "O Mago Negro Kuroi Shin'en está sentado no trono roubado do seu pai, no ápice da Torre do Abismo, "
-        "completamente alheio à tempestade de aço e vingança que marchará contra seus portões ao amanhecer. "
-        "É a véspera do seu julgamento final."
-    )
-    
-    return menu_evolucao(jogador)
+        # 5. GOLPE SUJO (MECÂNICA DE HONRA)
+        elif acao == "5":
+            jogador["honra"] -= 2
+            layout.imprimir_lento("[bold yellow]DESONRA![/bold yellow] Você chuta terra e detritos no rosto do oponente, quebrando o código samurai.")
+            dano_base = random.randint(5, 10)
+            dano_final = aplicar_multiplicador(dano_base, "Físico", fraqueza, resistencia)
+            hp_inimigo -= dano_final
+            layout.imprimir_lento(f"[green]O inimigo fica cego momentaneamente! Você acerta um golpe covarde causando {dano_final} de dano.[/green]")
+            carregando_ataque = False # Interrompe ataques do inimigo
 
-def evoluir_capitulo_5(jogador):
-    print("\n" + "="*60)
-    slow_print("                    O DESCANSO DO GUERREIRO - O LIMIAR DO ABISMO")
-    print("="*60 + "\n")
+        else:
+            layout.imprimir_lento("[dim]Ação inválida. Você hesitou e perdeu sua chance.[/dim]")
+            
+        # ================= MORTE DO INIMIGO =================
+        if hp_inimigo <= 0:
+            layout.imprimir_lento(f"\n[bold white]O {nome_inimigo} desaba sem vida a seus pés. Vitória![/bold white]")
+            jogador["xp"] = jogador.get("xp", 0) + xp_recompensa
+            layout.console.print(f"[bold yellow]+{xp_recompensa} XP[/bold yellow]")
+            
+            # Checa o level up independente logo após a vitória
+            jogador = checar_level_up(jogador)
+            return "vitoria"
+            
+        # ================= TURNO DO INIMIGO =================
+        if turno_inimigo and not inimigo_congelado:
+            layout.imprimir_lento(f"\n[dim][Turno do Inimigo: {nome_inimigo}][/dim]")
+            
+            if carregando_ataque:
+                layout.imprimir_lento(f"[bold red]O {nome_inimigo} libera o ATAQUE DEVASTADOR![/bold red]")
+                dano_sofrido = random.randint(max_dano, max_dano * 2)
+                layout.imprimir_lento(f"[red]Um golpe brutal quebra sua guarda! Você sofre {dano_sofrido} de dano crítico![/red]")
+                jogador["vitalidade"] -= dano_sofrido
+                carregando_ataque = False
+            else:
+                if max_dano >= 8 and random.randint(1, 100) <= 25:
+                    layout.imprimir_lento(f"[bold yellow]O {nome_inimigo} recua e começa a canalizar uma energia esmagadora para o próximo turno![/bold yellow]")
+                    carregando_ataque = True
+                else:
+                    dado_ataque = random.randint(1, 20)
+                    total_ataque = dado_ataque + bonus_ataque_inimigo
+                    
+                    time.sleep(0.5)
+                    layout.console.print(f"[dim]Ataque Inimigo: {dado_ataque} + {bonus_ataque_inimigo} = {total_ataque} vs Sua Defesa ({defesa_jogador})[/dim]")
+                    time.sleep(0.5)
+                    
+                    if total_ataque >= defesa_jogador:
+                        dano_sofrido = random.randint(min_dano, max_dano)
+                        layout.imprimir_lento(f"[bold red]O {nome_inimigo} acerta o golpe! Você sofre {dano_sofrido} de dano.[/bold red]")
+                        jogador["vitalidade"] -= dano_sofrido
+                    else:
+                        layout.imprimir_lento(f"[blue]Você bloqueia e desvia o ataque do {nome_inimigo} com sucesso![/blue]")
+        
+        defesa_jogador = 10 + mod_defesa 
+            
+    if jogador["vitalidade"] <= 0: 
+        return "morte"
 
-    slow_print(
-        "Na grandiosa Antecâmara do Trono, não há o conforto rústico das fogueiras. Há apenas o frio implacável "
-        "do piso de mármore obsidiano e o olhar julgador das estátuas colossais dos antigos Xoguns da sua linhagem, "
-        "todas deformadas e corrompidas pela magia das sombras."
-    )
-    slow_print(
-        "Você senta em posição de lótus, cruzando as pernas de frente para os imensos Portões de Ouro Negro. "
-        "A fadiga quase letal de ter rasgado seu caminho através de hordas infernais, abominações duplas e "
-        "armadilhas arcanas começa a desaparecer. O sangue escuro dos monstros escorre lentamente pelas canaletas da torre."
-    )
-    slow_print(
-        "O Sol Negro e a Lua Prateada estão fincadas no mármore ao seu lado. O silêncio é absoluto. "
-        "Esta é a sua última e mais profunda meditação. A jornada inteira culmina nestes segundos."
-    )
-    slow_print(
-        "O sacrifício do braço de Kazunari. As lágrimas dos camponeses na vila. As correntes nas Forjas de Tetsu. "
-        "O dragão nos arrozais. A libertação de Takenoko e a honra manchada de sangue de seu pai. "
-        "Tudo, absolutamente tudo, se resume à entidade diabólica que o aguarda atrás dessa porta."
-    )
+# ==========================================
+# TESTES DE HABILIDADE CENTRALIZADOS
+# ==========================================
+def rolar_teste(jogador, atributo_nome, dificuldade=20):
+    """Rola o teste e registra o uso do atributo para futuro Level Up"""
+    import random
+    import time
+    import layout
     
-    print("\n[Bênção dos Ancestrais] A aura dos Xoguns mortos reverbera através das lâminas e o fortalece de forma divina.")
-    aumento_hp = random.randint(5, 12)
-    jogador["max_vitalidade"] += aumento_hp
-    jogador["vitalidade"] = jogador["max_vitalidade"] 
-    print(f"♥ Vitalidade Máxima e Atual restauradas ao ápice! (+{aumento_hp} HP Máximo)")
+    valor_atributo = jogador.get(atributo_nome, 10)
+    jogador.setdefault("atributos_usados", set()).add(atributo_nome) 
     
-    print("\nOnde você canalizará todo o espírito de guerra do seu Clã para o duelo contra Kuroi Shin'en?")
-    print("1 - [A Fúria do Demônio] O ataque perfeito que reduz montanhas a pó. (+5 Kenjutsu)")
-    print("2 - [A Fluidez da Água] A agilidade que desvia a própria magia cósmica. (+5 Destreza)")
-    print("3 - [O Olho da Mente] A clareza para enxergar os fios da feitiçaria do Disco do Abismo. (+5 Conhecimento)")
+    d20 = random.randint(1, 20)
+    total = d20 + valor_atributo
+    layout.console.print(f"\n[dim]Rolando teste de {atributo_nome.capitalize()}...[/dim]")
+    time.sleep(1)
     
-    escolha = input("\nEscolha o Transe Final (1, 2 ou 3): ").strip()
-    if escolha == "1": 
-        jogador["kenjutsu"] += 5
-        slow_print("Seu espírito se inflama em pura intenção assassina.")
-    elif escolha == "2": 
-        jogador["destreza"] += 5
-        slow_print("Seu corpo e a gravidade entram em harmonia perfeita.")
-    elif escolha == "3": 
-        jogador["conhecimento"] += 5
-        slow_print("Sua mente afiada como vidro corta os véus da ilusão do castelo.")
-    else:
-        jogador["kenjutsu"] += 2
-        jogador["destreza"] += 2
-        jogador["conhecimento"] += 2
-        slow_print("A intuição de mil séculos flui de forma equilibrada em seu sangue.")
-    
-    return jogador
+    cor = "green" if total >= dificuldade else "red"
+    layout.console.print(f"[dim]d20 ({d20}) + {atributo_nome.capitalize()} ({valor_atributo}) = [/dim][bold {cor}]{total}[/bold {cor}] [dim](Dif: {dificuldade})[/dim]")
+    time.sleep(1)
+    return total >= dificuldade

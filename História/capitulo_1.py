@@ -1,414 +1,375 @@
 # capitulo_1.py
-import time
-import random
 import layout
-
-def rolar_teste(atributo_nome, valor_atributo, dificuldade=20):
-    """Rola 1d20 + Atributo para testar o sucesso de uma ação."""
-    d20 = random.randint(1, 20)
-    total = d20 + valor_atributo
-    print(f"\n[Rolando teste de {atributo_nome.capitalize()}]")
-    time.sleep(1)
-    print(f"[d20: {d20} + {atributo_nome.capitalize()}: {valor_atributo} = {total}] (Dificuldade: {dificuldade})")
-    time.sleep(1)
-    return total >= dificuldade
-
-def iniciar_combate(jogador, nome_inimigo, hp_inimigo, min_dano, max_dano):
-    """Inicia um loop de combate simples com sistema de Esquiva/Defesa."""
-    layout.imprimir_lento(f"\n⚔️ COMBATE INICIADO: {nome_inimigo.upper()} ⚔️")
-    
-    # Calcula a sua Defesa (Base 10 + modificador de agilidade e bloqueio)
-    mod_defesa = (jogador.get("destreza", 10) + jogador.get("kenjutsu", 10)) // 4
-    defesa_jogador = 10 + mod_defesa
-    
-    # O bônus de ataque do inimigo é baseado no quão forte ele bate
-    bonus_ataque_inimigo = max_dano // 2
-    
-    while hp_inimigo > 0 and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        max_hp = jogador.get("max_vitalidade", jogador["vitalidade"])
-        print(f"♥ Seu HP: {jogador['vitalidade']}/{max_hp}  |  🛡️ Sua Defesa: {defesa_jogador}  |  💀 HP do Inimigo: {hp_inimigo}")
-        print("1 - [Atacar] Desferir golpe com a Kagekiri.")
-        print("2 - [Fugir] Tentar escapar (Teste de Destreza).")
-        
-        acao = input("Ação (1 ou 2): ").strip()
-        
-        if acao == "1":
-            dano_jogador = random.randint(3, 10) + (jogador.get("kenjutsu", 10) // 3)
-            layout.imprimir_lento(f"> Você avança e corta o inimigo! Causou {dano_jogador} de dano.")
-            hp_inimigo -= dano_jogador
-            
-            if hp_inimigo <= 0:
-                layout.imprimir_lento(f"\nCom um golpe final perfeito, você derrotou o {nome_inimigo}!")
-                return "vitoria"
-        
-        elif acao == "2":
-            if rolar_teste("destreza", jogador.get("destreza", 10), 22):
-                layout.imprimir_lento("> Você joga poeira nos olhos do inimigo e recua para as sombras. Fuga bem-sucedida!")
-                return "fuga"
-            else:
-                layout.imprimir_lento("> Você tenta recuar, mas o inimigo bloqueia seu caminho!")
-        else:
-            layout.imprimir_lento("> Ação inválida! Você hesita e perde a iniciativa!")
-            
-        # ==========================================
-        # TURNO DO INIMIGO (Rolagem de Acerto)
-        # ==========================================
-        if hp_inimigo > 0:
-            layout.imprimir_lento(f"\n[Turno do Inimigo: {nome_inimigo}]")
-            dado_ataque = random.randint(1, 20)
-            total_ataque = dado_ataque + bonus_ataque_inimigo
-            
-            time.sleep(0.5)
-            print(f" 🎲 O inimigo ataca! (Rolou {dado_ataque} + {bonus_ataque_inimigo} = {total_ataque}) vs Sua Defesa ({defesa_jogador})")
-            time.sleep(0.5)
-            
-            if total_ataque >= defesa_jogador:
-                dano_sofrido = random.randint(min_dano, max_dano)
-                layout.imprimir_lento(f"> 💥 O {nome_inimigo} rompe sua guarda e acerta o golpe! Você perde {dano_sofrido} de HP.")
-                jogador["vitalidade"] -= dano_sofrido
-            else:
-                # Narrativa dinâmica para o erro do inimigo
-                if dado_ataque <= 5:
-                    layout.imprimir_lento(f"> 💨 O {nome_inimigo} ataca, mas erra grosseiramente o alvo. Você sai ileso!")
-                else:
-                    layout.imprimir_lento(f"> ⚔️ O {nome_inimigo} ataca, mas você apara com a Kagekiri e desvia o golpe no último segundo!")
-            
-    if jogador["vitalidade"] <= 0:
-        return "morte"
+import sistemas
 
 # ==========================================
-# ROTA 1: ESTRADA IMPERIAL
+# ROTA 1: A VILA CONGELADA (EXPANDIDA)
 # ==========================================
-def cena_estrada(jogador):
-    layout.cabecalho("A ESTRADA IMPERIAL E A VILA DE KIKU")
-
+def cena_vila_gelo(jogador):
+    layout.cabecalho("AS RUÍNAS DE NEVE", "Ecos do Clã Shiro")
+    
     layout.imprimir_lento(
-        "'A Estrada Imperial, meu jovem, era um rio de pétalas de cerejeira na primavera...', "
-        "a voz cansada de Kazunari ecoa na sua mente enquanto você desce a encosta.\n"
-        "A realidade, porém, é um pesadelo. A pedra branca foi engolida por uma lama espessa "
-        "que cheira a ferrugem. As cerejeiras estão mortas, seus galhos retorcidos parecem "
-        "mãos esqueléticas implorando aos céus cinzentos.\n"
-        "Após algumas horas de marcha tensa, um som corta o silêncio: o choro de uma criança.\n"
-        "Você se esgueira por trás das raízes podres de uma árvore e observa. Três guerreiros bloqueiam a estrada. "
-        "Eles vestem as armaduras distorcidas do antigo clã Shiro, mas a pele deles é cinza como cinzas de fogueira, "
-        "e os olhos são poços de escuridão pura. Guardas de Cinza. Mortais corrompidos pela magia de Kuroi.\n"
-        "Eles estão revistando a carroça quebrada de um velho mercador. Um dos guardas ergue a neta "
-        "do mercador pelos farrapos da roupa, rindo com uma voz que soa como pedras se chocando."
+        "A trilha estreita serpenteia montanha abaixo, mergulhando você em um mar de névoa pálida. "
+        "A temperatura cai drasticamente, e a neve sob suas botas começa a soar como vidro quebrando.\n\n"
+        "Logo, as silhuetas de pagodes arruinados emergem da tempestade. Esta é a antiga Vila de Treinamento "
+        "do Clã Shiro, um lugar onde a elite militar forjava seu corpo e espírito. Agora, o silêncio é "
+        "absoluto, perturbado apenas pelo uivo fantasmagórico do vento esgueirando-se pelos telhados esburacados."
     )
-
-    print("\nO que você faz?")
-    print("1 - [Kenjutsu] A honra exige sangue. Sacar a Kagekiri e obliterar os traidores.")
-    print("2 - [Destreza] A missão é maior que dois camponeses. Esgueirar-se pelas sombras e deixá-los para trás.")
-    print("3 - [Conhecimento] Kazunari ensinou os pontos cegos dos mortos-vivos. Tentar uma tática de distração ilusória.")
-
-    escolha = input("\nEscolha (1, 2 ou 3): ").strip()
-    mercador_salvo = False
-
-    if escolha == "1":
-        layout.imprimir_lento("\nVocê respira fundo. A fúria aquece seu sangue. A Kagekiri desliza da bainha com um zumbido fantasmagórico.")
-        jogador["honra"] += 2
-        print("[Honra +2] Um samurai é o escudo dos indefesos.")
-
-        if rolar_teste("kenjutsu", jogador["kenjutsu"], 20):
-            layout.imprimir_lento(
-                "SUCESSO! Você é um relâmpago azul na lama negra. O primeiro guarda perde a cabeça antes de piscar. "
-                "O segundo tenta erguer a lança, mas a lâmina de meteorito corta a haste de ferro e o peito dele de uma só vez. "
-                "O terceiro cai de joelhos, virando pó negro."
-            )
-            mercador_salvo = True
-        else:
-            layout.imprimir_lento(
-                "FALHA! Sua lâmina corta o primeiro, mas a lama escorregadia trai seus pés. "
-                "Um dos guardas acerta um golpe contundente nas suas costelas antes de você decapitá-lo! O sobrevivente avança!"
-            )
-            dano = random.randint(1, 3)
-            jogador["vitalidade"] -= dano
-            print(f"Você perdeu {dano} de Vitalidade no deslize.")
-            resultado = iniciar_combate(jogador, "Guarda de Cinza Restante", hp_inimigo=15, min_dano=1, max_dano=3)
-            if resultado == "vitoria":
-                mercador_salvo = True
-
-    elif escolha == "2":
-        layout.imprimir_lento("\nVocê aperta o cabo da espada, mas engole a raiva. Matar Kuroi salvará milhares. Você não pode arriscar agora.")
-        jogador["honra"] -= 3
-        print("[Honra -3] Os gritos da criança mancharão seus pesadelos.")
-
-        if rolar_teste("destreza", jogador["destreza"], 19):
-            layout.imprimir_lento(
-                "SUCESSO! Você se move com o vento. Os guardas estão distraídos demais com a crueldade "
-                "e não percebem a sua sombra deslizando pela floresta morta além da estrada."
-            )
-        else:
-            layout.imprimir_lento(
-                "FALHA! Um corvo grasna de repente e voa do seu esconderijo. O guarda joga a criança no chão "
-                "e atira uma faca de arremesso que crava no seu ombro enquanto você foge! Eles o avistaram!"
-            )
-            dano = random.randint(1, 2)
-            jogador["vitalidade"] -= dano
-            print(f"Você perdeu {dano} de Vitalidade.")
-            resultado = iniciar_combate(jogador, "Patrulha de Cinza", hp_inimigo=20, min_dano=2, max_dano=4)
-            mercador_salvo = False 
-
-    elif escolha == "3":
-        layout.imprimir_lento("\nVocê se lembra das noites frias. 'Criaturas de cinza enxergam a vida, não a luz', dizia o mestre.")
-        if rolar_teste("conhecimento", jogador["conhecimento"], 18):
-            layout.imprimir_lento(
-                "SUCESSO! Você quebra uma pedra de enxofre que trazia do cume e a arremessa nas brasas da carroça. "
-                "Uma fumaça mística ofusca os sentidos vitais dos guardas. Eles gritam, cegos. O mercador aproveita "
-                "o caos e foge com a criança. Você passa despercebido."
-            )
-            jogador["honra"] -= 1
-            print("[Honra -1] Tática engenhosa, mas sem a bravura de um embate direto.")
-            mercador_salvo = True 
-        else:
-            layout.imprimir_lento(
-                "FALHA! Você tenta criar o pó ofuscante, mas a umidade da lama estraga a mistura. "
-                "Os guardas o farejam. Você é forçado a lutar contra oponentes enfurecidos de uma vez!"
-            )
-            resultado = iniciar_combate(jogador, "Guardas Enfurecidos", hp_inimigo=25, min_dano=2, max_dano=5)
-            if resultado == "vitoria":
-                mercador_salvo = True
-
-    else:
-        layout.imprimir_lento("A indecisão é a mãe da morte. Os guardas atiram em você antes do combate começar!")
-        jogador["vitalidade"] -= 2
-        iniciar_combate(jogador, "Patrulha de Cinza", hp_inimigo=20, min_dano=2, max_dano=4)
-        mercador_salvo = False
-
-    if jogador["vitalidade"] <= 0: return jogador
-
-    # --- CONTINUAÇÃO DA TRAMA DA ESTRADA ---
+    
+    # ------------------ DESAFIO 1 ------------------
     layout.divisoria()
-    
-    if mercador_salvo:
-        layout.imprimir_lento(
-            "Com a estrada segura, o velho mercador se joga aos seus pés, tremendo.\n"
-            "'Meu lorde... eu não via as vestes de um samurai há décadas. Pensei que o clã Shiro estava extinto!'\n"
-            "Ele vasculha os destroços da carroça e estende as mãos trêmulas para você. "
-            "Nelas repousa um pedaço de jade bruto, pulsando com uma energia morna.\n"
-            "'Tome, por favor. É uma Lágrima de Kami. Iria vender no mercado clandestino, mas pertence a um herói.'"
-        )
-        jogador.setdefault("inventario", []).append("Lágrima de Kami")
-        print("[Item Adicionado: Lágrima de Kami (Pode curar feitiços ou ser usada em rituais)]")
-
     layout.imprimir_lento(
-        "Você continua a descida. Algumas horas depois, a neblina se dissipa ligeiramente, revelando a Vila de Kiku.\n"
-        "'A joia do norte', Kazunari a chamava. Hoje, não passa de um agrupamento de casebres apodrecidos. "
-        "Os moradores andam de cabeça baixa, cobrindo os rostos. O medo empapuça o ar.\n"
-        "No centro da vila, a antiga casa de chá foi transformada em um posto de coleta de sangue para os Yokais."
-        "Um magistrado humano, gordo e vestido com sedas roubadas, supervisiona a extorsão."
+        "Para acessar o pátio principal, você deve cruzar a Grande Ponte do Suspiro. A estrutura de madeira, "
+        "outrora majestosa, está petrificada por uma crosta de gelo escuro. O abismo abaixo não revela seu "
+        "fundo, exalando um miasma que congela o ar."
     )
-
-    print("\nComo você vai cruzar a vila em direção à Floresta Murmurante?")
-    print("1 - [Ação Direta] Caminhar até o centro, expor a Kagekiri e desafiar o Magistrado corrupto na frente de todos.")
-    print("2 - [Furtividade] Ignorar o centro da vila. Usar os telhados e vielas para chegar aos portões da floresta em silêncio.")
+    layout.console.print("\n[bold]Desafio 1: A Ponte Congelada[/bold]")
+    layout.console.print(f"[cyan]Éter Atual: {jogador.get('eter',0)}/{jogador.get('max_eter',50)}[/cyan]")
+    layout.console.print("[white]1 - [Destreza Dificuldade 14][/white] Caminhar com leveza cirúrgica, sentindo as micro-fissuras no gelo antes de pisar.")
+    layout.console.print("[cyan]2 - [Passos Fantasmas][/cyan] Gastar 10 de Éter para se materializar no ar, cruzando o abismo em um piscar de olhos.")
     
-    escolha_vila = input("\nEscolha (1 ou 2): ").strip()
-
-    if escolha_vila == "1":
-        layout.imprimir_lento(
-            "Você caminha pesadamente. A cada passo, a aura da sua espada atrai os olhares apavorados dos camponeses.\n"
-            "O magistrado arregala os olhos ao ver a lâmina. Ele grita por guardas, mas o medo nos olhos dele é o verdadeiro prêmio. "
-            "Você abre caminho a força, deixando uma mensagem clara: O Clã Shiro voltou."
-        )
-        jogador["honra"] += 3
-        print("[Honra +3] A esperança foi reacendida no coração do povo.")
-        layout.imprimir_lento("Você deixa a vila banhada em caos, adentrando os limites escuros da Floresta Murmurante.")
-
-    elif escolha_vila == "2":
-        layout.imprimir_lento(
-            "Você é um fantasma. Saltando pelos telhados podres, você observa a miséria lá embaixo.\n"
-            "Embora seu coração sangre por não ajudar, você sabe que Kuroi Shin'en é o verdadeiro alvo. "
-            "Você alcança os muros dos fundos da vila sem ser detectado, saltando para o barro do outro lado.\n"
-            "A neblina densa da Floresta Murmurante o engole instantaneamente."
-        )
+    layout.limpar_buffer_teclado()
+    esc = input("\nComo você cruza? (1 ou 2): ").strip()
     
+    if esc == "2" and jogador.get("eter", 0) >= 10:
+        jogador["eter"] -= 10
+        jogador.setdefault("atributos_usados", set()).add("eter")
+        layout.imprimir_lento("\n[cyan]Sua forma física dissolve-se em fumaça azul. O vento tenta agarrá-lo, mas você já está do outro lado, sólido e ileso.[/cyan]")
     else:
-        layout.imprimir_lento("Sua hesitação atrai a atenção de cães de guarda corrompidos, forçando-o a correr pelos becos e fugir para a floresta.")
+        if esc == "2": 
+            layout.imprimir_lento("\n[red]Você tenta puxar a energia da linhagem, mas o Éter falha. Você é forçado a tentar a travessia manual.[/red]")
+        
+        if sistemas.rolar_teste(jogador, "destreza", 14):
+            layout.imprimir_lento("\n[green]Sucesso! Você desliza como uma folha ao vento, distribuindo seu peso perfeitamente até alcançar solo firme.[/green]")
+        else:
+            layout.imprimir_lento("\n[red]FALHA! Perto do fim, o gelo cede com um estalo ensurdecedor. Você despenca, conseguindo agarrar a borda no último segundo, mas os farpas de gelo rasgam suas mãos.[/red]")
+            jogador["vitalidade"] -= 5
+            layout.console.print("[red]-5 de HP pelo esforço e ferimentos.[/red]")
+            
+    if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
 
+    # ------------------ DESAFIO 2 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Pisando no pátio interno, o cheiro de morte antiga inunda suas narinas. Entre as estátuas de "
+        "samurais congeladas, dois pares de olhos azuis incandescente se acendem na nevasca. "
+        "Eram cães mastins da Guarda, agora bestas distorcidas pelo frio do Abismo. A carne rasgada deles "
+        "revela ossos de puro gelo."
+    )
+    resultado = sistemas.iniciar_combate(jogador, "Matilha Corrompida (2 Lobos)", hp_inimigo=30, defesa_inimigo=12, min_dano=2, max_dano=6, xp_recompensa=35, fraqueza="Fogo", resistencia="Gelo")
+    if resultado == "morte": return jogador
+    layout.esperar_enter()
+
+    # ------------------ DESAFIO 3 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Com as bestas abatidas, a tempestade repentinamente ganha força, criando um ciclone impenetrável "
+        "que bloqueia o caminho para o Templo Superior. No centro do pátio, pendurado por correntes "
+        "enferrujadas, há o Sino do Guardião, coberto por séculos de geada mágica. A lenda diz que seu som "
+        "apazigua os espíritos da montanha."
+    )
+    layout.console.print("\n[bold]Desafio 3: O Sino Congelado[/bold]")
+    layout.console.print("[white]1 - [Kenjutsu Dificuldade 15][/white] Usar a força bruta e o cabo da espada como martelo para quebrar o gelo e ecoar o sino.")
+    layout.console.print("[white]2 - [Conhecimento Dificuldade 14][/white] Encontrar os pontos de ressonância corretos no bronze para dissipar a magia sem esforço físico.")
+    
+    layout.limpar_buffer_teclado()
+    esc_sino = input("\nSua ação (1 ou 2): ").strip()
+    
+    if esc_sino == "1":
+        if sistemas.rolar_teste(jogador, "kenjutsu", 15):
+            layout.imprimir_lento("\n[green]Com um golpe estrondoso, as correntes tremem e o gelo se estilhaça em mil pedaços! O tom grave do sino rasga a tempestade, abrindo caminho.[/green]")
+        else:
+            layout.imprimir_lento("\n[red]O impacto é imperfeito. O gelo absorve o choque, e uma onda de frio rebota pelo seu braço, causando danos aos seus músculos antes de finalmente soar.[/red]")
+            jogador["vitalidade"] -= 3
+    else:
+        if sistemas.rolar_teste(jogador, "conhecimento", 14):
+            layout.imprimir_lento("\n[green]Você dedilha o bronze, sentindo a malha mágica. Um toque preciso com a Kagekiri anula a runa invisível. O sino soa puro e cristalino, acalmando os ventos.[/green]")
+        else:
+            layout.imprimir_lento("\n[red]Sua mente falha em decifrar os padrões. Ao tocar o sino no ponto errado, uma explosão de energia gélida o arremessa para trás.[/red]")
+            jogador["vitalidade"] -= 3
+            
+    if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
+
+    # ------------------ DESAFIO 4 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "A névoa se dissipa o suficiente para revelar o Templo Superior, mas algo está errado. "
+        "Uma intenção assassina pesa no ar. Acima, no telhado curvado de um santuário menor, um Espectro "
+        "Arqueiro retesa um arco enorme. A flecha negra já está apontada para o seu peito.\n"
+        "Exatamente acima do atirador, uma imensa gárgula de pedra, afrouxada pelo tempo, balança."
+    )
+    layout.console.print("\n[bold]Desafio 4: A Emboscada do Arqueiro[/bold]")
+    layout.console.print("[white]1 - [Conhecimento Dificuldade 16][/white] Lançar uma kunai na gárgula, esmagando o atirador antes que ele o veja. Assassinar sem chance de defesa. [yellow](Custa Honra)[/yellow]")
+    layout.console.print("[white]2 - [Kenjutsu Dificuldade 17][/white] Avançar de frente, brandindo a lâmina para desviar a flecha e fatiá-lo. [green](Ganha Honra)[/green]")
+    
+    layout.limpar_buffer_teclado()
+    esc2 = input("\nSua reação (1 ou 2): ").strip()
+    lutou_arqueiro = False
+    
+    if esc2 == "1":
+        if sistemas.rolar_teste(jogador, "conhecimento", 16):
+            layout.imprimir_lento("\n[green]A Kunai atinge a junção da estátua. A gárgula desaba em silêncio, esmagando o espectro. Um abate perfeito.[/green]")
+            jogador["xp"] += 30
+            jogador["honra"] -= 1
+            layout.console.print("[bold yellow]+30 XP. A mancha da covardia suja seu espírito. (-1 Honra)[/bold yellow]")
+        else:
+            layout.imprimir_lento("\n[red]A kunai resvala na pedra. O atirador percebe o ataque e dispara uma flecha que rasga seu ombro![/red]")
+            jogador["vitalidade"] -= 5
+            lutou_arqueiro = True
+    else:
+        if sistemas.rolar_teste(jogador, "kenjutsu", 17):
+            layout.imprimir_lento("\n[green]Você encara a morte. Num movimento fluido, rebate a flecha no ar, usa os detritos para saltar até o telhado e corta o arqueiro ao meio![/green]")
+            jogador["xp"] += 30
+            jogador["honra"] += 1 
+            layout.console.print("[bold green]+30 XP. Você agiu sob a luz da espada, honrando os ancestrais! (+1 Honra)[/bold green]")
+        else:
+            layout.imprimir_lento("\n[red]Seus reflexos falham. A flecha quebra sua guarda e crava profundamente no seu flanco![/red]")
+            jogador["vitalidade"] -= 5
+            lutou_arqueiro = True
+
+    if lutou_arqueiro and jogador["vitalidade"] > 0:
+        resultado = sistemas.iniciar_combate(jogador, "Espectro Arqueiro", hp_inimigo=15, defesa_inimigo=12, min_dano=3, max_dano=7, xp_recompensa=20, fraqueza="Físico", resistencia="Nenhuma")
+        if resultado == "morte": return jogador
+        
+    if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
+
+    # ------------------ DESAFIO 5 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Finalmente, você pisa nas escadarias do dojo principal. O portão duplo foi arrancado das dobradiças. "
+        "No interior escurecido, as antigas brasas se acendem com uma chama azul doentia. "
+        "Uma figura colossal se levanta lentamente das sombras. Uma armadura oca, preenchida com um furacão "
+        "de neve e ódio. O Tenente Espectral Shiro arrasta sua Nodachi pelo piso de madeira, "
+        "gritando em uma língua que mistura lamento e raiva."
+    )
+    resultado = sistemas.iniciar_combate(jogador, "Tenente Shiro (CHEFE)", hp_inimigo=45, defesa_inimigo=15, min_dano=4, max_dano=9, xp_recompensa=80, fraqueza="Físico", resistencia="Gelo")
+    
+    if resultado == "vitoria":
+        layout.imprimir_lento(
+            "\nCom um último golpe da Kagekiri, a ligação espiritual da armadura é cortada. "
+            "A neve cessa abruptamente. As placas de aço caem pesadamente pelo dojo. "
+            "Sob os restos do peitoral, você nota algo brilhando."
+        )
+        layout.imprimir_lento(
+            "É um medalhão ancestral preservado. Ao tocá-lo, imagens de um passado orgulhoso "
+            "inundam sua mente, lembrando-o de quem você realmente é."
+        )
+        jogador["honra"] += 2
+        layout.console.print("\n[bold green]+2 de Honra pela purificação do templo.[/bold green]")
+        layout.console.print("[bold yellow][Item Adicionado: Pingente de Gelo Eterno (Passiva: +2 Defesa)][/bold yellow]")
+        
+        if "inventario" not in jogador: jogador["inventario"] = []
+        jogador["inventario"].append("Pingente de Gelo")
+        jogador["bonus_defesa"] += 2
+        
+        layout.esperar_enter()
+        
+        layout.imprimir_lento(
+            "A exaustão toma conta do seu corpo. Atrás do dojo, há um pequeno altar de pedra abrigado "
+            "do vento, perfeito para montar acampamento antes de seguir viagem."
+        )
+        # Acampamento
+        jogador = sistemas.acampamento_fogueira(jogador, capitulo_atual=1, contexto="vila_gelo")
+
+    # Espera antes de sair da rota, para o jogador ler como ficou a fogueira
+    layout.esperar_enter("[dim]A tela será limpa para exibir seu status atualizado...[/dim]")
     return jogador
 
 # ==========================================
-# ROTA 2: CAVERNAS DA MANDÍBULA
+# ROTA 2: AS CAVERNAS DA MANDÍBULA
 # ==========================================
 def cena_caverna(jogador):
-    layout.cabecalho("AS CAVERNAS DA MANDÍBULA E O ABISMO")
-
+    layout.cabecalho("AS CAVERNAS DA MANDÍBULA", "Trevas Primordiais")
+    
     layout.imprimir_lento(
-        "'A escuridão absoluta não é o fim da luz, Ishido. É o berço de coisas muito mais antigas que ela...'\n"
-        "O aviso de Kazunari reverbera em sua mente enquanto a luz do dia fica para trás, engolida pelas rochas.\n"
-        "Você escolheu o atalho pelas Cavernas da Mandíbula. O ar aqui é denso, sufocante, "
-        "com um cheiro metálico de sangue velho misturado a enxofre. Sob suas botas, não há apenas "
-        "pedras, mas o som oco de ossos humanos triturados.\n"
-        "De repente, o gotejar da água para. O silêncio se torna absoluto.\n"
-        "No alto da escuridão, oito olhos amarelos e leitosos se abrem. Um Tsuchigumo, o temido Yokai "
-        "aranha das lendas, do tamanho de uma carroça de guerra. Suas quelíceras estalam, e uma "
-        "teia cujos fios brilham como arame afiado bloqueia completamente a passagem."
+        "A encosta direita da montanha não possui escadas esculpidas, apenas uma fissura natural "
+        "na rocha escura que parece engolir a luz. O ar quente e úmido que sobe das profundezas "
+        "cheira a minérios antigos e putrefação. Você mergulha na escuridão, onde ecos de gotas d'água "
+        "soam como o tique-taque de um relógio fúnebre."
     )
 
-    print("\nO que você faz?")
-    print("1 - [Kenjutsu] 'Aço contra carapaça'. Focar toda a sua força no 'Corte da Lótus' para decepar as pernas da fera.")
-    print("2 - [Destreza] 'O vento não é pego em redes'. Correr pelas paredes e estalactites, saltando sobre a teia e o monstro.")
-    print("3 - [Conhecimento] 'A mente domina a fera'. Executar o selo Onmyodo do fogo fátuo para cegar e espantar o Yokai.")
-
-    escolha = input("\nEscolha (1, 2 ou 3): ").strip()
-    yokai_derrotado = False
-
-    if escolha == "1":
-        layout.imprimir_lento("\nCom um grito de guerra que ecoa na caverna, você empunha a Kagekiri com as duas mãos e avança!")
-        jogador["honra"] += 1
-        print("[Honra +1] Enfrentar um demônio de frente exige coragem inabalável.")
-
-        if rolar_teste("kenjutsu", jogador["kenjutsu"], 22):
-            layout.imprimir_lento(
-                "SUCESSO! O aço de meteorito zune no ar escuro. Seu corte é um arco de luz azul "
-                "perfeito. Duas das patas grossas do monstro são decepadas de uma só vez. O Tsuchigumo "
-                "grita com um som humano e recua para as fendas do teto, pingando um lodo corrosivo. O caminho está livre."
-            )
-            yokai_derrotado = True
+    # ------------------ DESAFIO 1 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Após minutos de descida, a passagem se estreita e os túneis ganham uma tonalidade esverdeada. "
+        "À sua frente, uma espessa nuvem de fumaça tóxica flutua rente ao solo. É o Sopro do Abismo, um "
+        "gás paralisante que derrete lentamente os pulmões de quem tenta respirar ali."
+    )
+    layout.console.print("\n[bold]Desafio 1: O Miasma Sufocante[/bold]")
+    layout.console.print("[white]1 - [Destreza Dificuldade 15][/white] Prender a respiração e correr cegamente, desviando das rochas escorregadias até o outro lado.")
+    layout.console.print("[white]2 - [Conhecimento Dificuldade 14][/white] Rasgar um pedaço do seu kimono e utilizar terra úmida com minerais da caverna para criar um filtro de ar improvisado.")
+    
+    layout.limpar_buffer_teclado()
+    esc = input("\nComo você atravessa? (1 ou 2): ").strip()
+    
+    if esc == "1":
+        if sistemas.rolar_teste(jogador, "destreza", 15):
+            layout.imprimir_lento("\n[green]Seus pulmões queimam, e as pernas pedem socorro, mas você emerge do outro lado, tossindo a salvo da nuvem mortal.[/green]")
         else:
-            layout.imprimir_lento(
-                "FALHA! A carapaça do monstro é dura como ferro fundido. A Kagekiri resvala com faíscas. "
-                "O impacto o desequilibra, e a fera avança furiosamente sobre você!"
-            )
-            resultado = iniciar_combate(jogador, "Tsuchigumo Colossal", hp_inimigo=30, min_dano=3, max_dano=6)
-            if resultado == "vitoria": yokai_derrotado = True
-
-    elif escolha == "2":
-        layout.imprimir_lento("\nVocê embainha a espada parcialmente. O samurai verdadeiro sabe a hora de não derramar sangue inútil.")
-        jogador["honra"] -= 1
-        print("[Honra -1] Fugir de uma besta infernal o mantém vivo, mas mancha o orgulho.")
-
-        if rolar_teste("destreza", jogador["destreza"], 20):
-            layout.imprimir_lento(
-                "SUCESSO! Você é uma sombra ágil. Quicando na parede úmida, você gira no ar, passando "
-                "milímetros acima das presas envenenadas da criatura. Você aterrissa rolando do outro lado "
-                "da teia impenetrável. A fera silva, frustrada por ter perdido a presa."
-            )
-        else:
-            layout.imprimir_lento(
-                "FALHA! O musgo na parede esfarela sob sua bota. Você perde o impulso e cai "
-                "direto na borda da teia. Os fios cortam suas roupas como navalhas. O monstro te persegue!"
-            )
-            dano = random.randint(1, 3)
-            jogador["vitalidade"] -= dano
-            print(f"Você perdeu {dano} de Vitalidade na teia.")
-            resultado = iniciar_combate(jogador, "Tsuchigumo Faminto", hp_inimigo=25, min_dano=2, max_dano=5)
-            if resultado == "vitoria": yokai_derrotado = True
-
-    elif escolha == "3":
-        layout.imprimir_lento("\nVocê crava a espada na pedra, une os dedos polegar e indicador, e entoa o mantra de Kazunari.")
-        if rolar_teste("conhecimento", jogador["conhecimento"], 19):
-            layout.imprimir_lento(
-                "SUCESSO! As palavras antigas ganham vida. Uma faísca azul salta de seus dedos e "
-                "inflama o miasma da caverna. Uma luz cegante e purificadora explode. "
-                "O Yokai, acostumado a décadas de escuridão, entra em pânico e foge se arrastando para as profundezas."
-            )
-            yokai_derrotado = True
-        else:
-            layout.imprimir_lento(
-                "FALHA! Você troca uma única sílaba do mantra complexo. A magia implode em suas mãos "
-                "com um estalo abafado, queimando seus dedos. O Yokai, enfurecido pelo barulho, investe."
-            )
-            dano = random.randint(1, 2)
-            jogador["vitalidade"] -= dano
-            print(f"Suas mãos queimam. Você perdeu {dano} de Vitalidade.")
-            resultado = iniciar_combate(jogador, "Tsuchigumo Enfurecido", hp_inimigo=25, min_dano=3, max_dano=6)
-            if resultado == "vitoria": yokai_derrotado = True
-
+            layout.imprimir_lento("\n[red]Você tropeça em uma estalagmite no escuro! O ar foge dos pulmões e você inala o veneno profano, cambaleando até a saída.[/red]")
+            jogador["vitalidade"] -= 6
+            layout.console.print("[red]-6 de HP por danos pulmonares e escoriações.[/red]")
     else:
-        layout.imprimir_lento("Opção inválida. A escuridão não espera indecisos. A besta salta sobre você.")
-        jogador["vitalidade"] -= 2
-        iniciar_combate(jogador, "Tsuchigumo", hp_inimigo=25, min_dano=2, max_dano=5)
+        if sistemas.rolar_teste(jogador, "conhecimento", 14):
+            layout.imprimir_lento("\n[green]O tecido filtra perfeitamente a toxicidade. Você caminha em segurança pelo gás, com a respiração fria, mas limpa.[/green]")
+        else:
+            layout.imprimir_lento("\n[red]Você mistura a terra errada. A composição não segura o veneno e queima seu rosto, obrigando você a correr em pânico para o fim do túnel![/red]")
+            jogador["vitalidade"] -= 5
+            layout.console.print("[red]-5 de HP por envenenamento leve.[/red]")
 
     if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
 
-    # --- CONTINUAÇÃO DA TRAMA DA CAVERNA ---
+    # ------------------ DESAFIO 2 ------------------
     layout.divisoria()
-
-    if yokai_derrotado:
-        layout.imprimir_lento(
-            "Com a passagem agora iluminada pela luz fraca que vem do fim do túnel, "
-            "você nota algo preso em um antigo casulo espesso deixado pelo Tsuchigumo no chão.\n"
-            "Você rasga a seda com a espada. Lá dentro estão os restos mortais de um monge guerreiro de Takenoko. "
-            "Nas mãos ósseas dele, um pequeno amuleto de bronze em forma de corvo ainda brilha intensamente."
-        )
-        jogador.setdefault("inventario", []).append("Sino do Corvo de Bronze")
-        print("[Item Adicionado: Sino do Corvo de Bronze (Emite um som que revela ilusões de nível baixo)]")
-
     layout.imprimir_lento(
-        "Você avança em direção à luz. O ar frio atinge seu rosto, mas a visão do lado de fora o paralisa.\n"
-        "A caverna não leva à Vila de Kiku. O atalho cuspiu você no alto de um desfiladeiro vertiginoso. "
-        "Lá embaixo, estendendo-se até o horizonte, está a vasta e assustadora Floresta Murmurante.\n"
-        "A neblina no nível do solo pulsa como um coração doente. A descida pelo paredão de pedra é íngreme e mortal. "
-        "O vento corta o desfiladeiro, trazendo sussurros de espíritos perdidos na floresta abaixo."
+        "A fumaça fica para trás, revelando uma câmara colossal. O piso desaparece num buraco negro. "
+        "A única forma de prosseguir é por meio de pilares de rocha vulcânica dispersos pelo abismo, "
+        "pouco iluminados por fungos bioluminescentes."
     )
+    layout.console.print("\n[bold]Desafio 2: A Ponte Quebrada do Vazio[/bold]")
+    layout.console.print(f"[cyan]Éter Atual: {jogador.get('eter',0)}/{jogador.get('max_eter',50)}[/cyan]")
+    layout.console.print("[white]1 - [Destreza Dificuldade 16][/white] Fazer uma série de saltos calculados sobre os pilares instáveis.")
+    layout.console.print("[cyan]2 - [Passos Fantasmas][/cyan] Gastar 10 de Éter para teleportar de um lado ao outro, sem correr riscos físicos.")
 
-    print("\nComo você decide iniciar sua descida para a Floresta Murmurante?")
-    print("1 - [Descanso Tático] Montar um acampamento rápido e oculto na boca da caverna para enfaixar ferimentos antes de descer.")
-    print("2 - [Determinação Cega] A fúria não descansa. Descer as rochas imediatamente enquanto a adrenalina oculta a dor.")
+    layout.limpar_buffer_teclado()
+    esc2 = input("\nComo você cruza o abismo? (1 ou 2): ").strip()
+    
+    if esc2 == "2" and jogador.get("eter", 0) >= 10:
+        jogador["eter"] -= 10
+        jogador.setdefault("atributos_usados", set()).add("eter")
+        layout.imprimir_lento("\n[cyan]Canalizando seu sangue, o mundo perde a cor e você surge milagrosamente na borda segura do outro lado.[/cyan]")
+    else:
+        if esc2 == "2": 
+            layout.imprimir_lento("\n[red]Você tenta puxar a energia da linhagem, mas sua mente falha. Você precisa saltar.[/red]")
+            
+        if sistemas.rolar_teste(jogador, "destreza", 16):
+            layout.imprimir_lento("\n[green]Seus saltos são precisos como os de um predador. A pedra cede apenas segundos depois que suas botas a abandonam.[/green]")
+        else:
+            layout.imprimir_lento("\n[red]Um pilar se esfarela. Você despenca, conseguindo cravar a Kagekiri na parede de pedra metros abaixo, mas luxando o ombro no processo e precisando escalar o resto.[/red]")
+            jogador["vitalidade"] -= 5
+            layout.console.print("[red]-5 de HP pela queda.[/red]")
 
-    escolha_descida = input("\nEscolha (1 ou 2): ").strip()
+    if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
 
-    if escolha_descida == "1":
+    # ------------------ DESAFIO 3 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Você adentra corredores de cristal maciço. Porém, o som de garras arranhando o vidro ecoa. "
+        "Do teto despencam horrores aracnídeos gigantes, suas carapaças formadas por quartzo espinhoso "
+        "e presas gotejando ácido corrosivo."
+    )
+    resultado = sistemas.iniciar_combate(jogador, "Aranhas de Cristal (3 Obreiras)", hp_inimigo=35, defesa_inimigo=11, min_dano=2, max_dano=7, xp_recompensa=40, fraqueza="Físico", resistencia="Gelo")
+    if resultado == "morte": return jogador
+    layout.esperar_enter()
+
+    # ------------------ DESAFIO 4 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "Atrás da toca das aranhas, escondido pelo tempo, repousa o Altar Obsceno. Estátuas bestiais "
+        "de onis distorcidos cercam uma bacia cheia de um líquido vermelho incandescente. O altar sussurra "
+        "na sua mente, prometendo restaurar sua força mágica em troca do sangue fresco da sua ferida."
+    )
+    layout.console.print("\n[bold]Desafio 4: A Barganha do Abismo[/bold]")
+    layout.console.print("[white]1 - [Oferecer o próprio Sangue][/white] Cortar a mão e derramar na bacia. Restaura todo o seu Éter e dá XP, mas [yellow]Custa muita Honra[/yellow].")
+    layout.console.print("[white]2 - [Kenjutsu Dificuldade 18][/white] Repudiar a oferta profana e tentar destruir o altar pagão com um golpe de espada. [green](Ganha Honra)[/green]")
+    
+    layout.limpar_buffer_teclado()
+    esc4 = input("\nQual a sua escolha? (1 ou 2): ").strip()
+    
+    if esc4 == "1":
+        layout.imprimir_lento("\n[dim]A lâmina corta sua palma. O sangue cai na bacia, sibilando. O líquido sobe pelo seu braço em formato de sombras, inundando sua mente com poder vil.[/dim]")
+        jogador["vitalidade"] -= 4
+        jogador["eter"] = jogador.get("max_eter", 50)
+        jogador["xp"] += 35
+        jogador["honra"] -= 3
+        layout.console.print("[bold yellow]Éter totalmente restaurado. +35 XP. Sua ligação com as artes das trevas se estreita. (-3 Honra, -4 HP)[/bold yellow]")
+    else:
+        if sistemas.rolar_teste(jogador, "kenjutsu", 18):
+            layout.imprimir_lento("\n[green]Seu rugido abafa as vozes! A Kagekiri desce impiedosa partindo o altar e a bacia ao meio. A magia das trevas se dissolve.[/green]")
+            jogador["xp"] += 30
+            jogador["honra"] += 2
+            layout.console.print("[bold green]+30 XP. Você manteve sua integridade moral inabalável. (+2 Honra)[/bold green]")
+        else:
+            layout.imprimir_lento("\n[red]Sua espada bate na pedra e ricocheteia! O altar revida sua agressão, disparando um relâmpago rubro contra seu peito![/red]")
+            jogador["vitalidade"] -= 6
+            layout.console.print("[red]-6 de HP por retribuição mágica profana.[/red]")
+
+    if jogador["vitalidade"] <= 0: return jogador
+    layout.esperar_enter()
+
+    # ------------------ DESAFIO 5 ------------------
+    layout.divisoria()
+    layout.imprimir_lento(
+        "No fundo da galeria final da caverna encontra-se um lago subterrâneo sem vida. Mas assim que você "
+        "se aproxima da margem, a água começa a ferver e recuar. Uma enorme rocha se ergue do solo, "
+        "revelando braços musculosos compostos de granito negro e carne pútrida. O Guardião das Profundezas, "
+        "um Golém distorcido por corrupção anciã, se coloca entre você e a saída da montanha."
+    )
+    resultado = sistemas.iniciar_combate(jogador, "Golém das Profundezas (CHEFE)", hp_inimigo=50, defesa_inimigo=16, min_dano=5, max_dano=10, xp_recompensa=90, fraqueza="Nenhuma", resistencia="Físico")
+    
+    if resultado == "vitoria":
         layout.imprimir_lento(
-            "Você junta fungos secos e cria uma fogueira minúscula, que não emite luz, apenas calor. "
-            "Você medita, limpa a Kagekiri e aperta as ataduras. A memória do seu mestre conforta seu coração."
+            "\nO colosso emite um grunhido profundo antes de se desfazer em uma pilha de escombros inúteis. "
+            "No núcleo do peito de pedra do monstro, incrustado, há uma joia brilhante."
         )
-        cura = random.randint(3, 6)
-        max_vit = jogador.get("max_vitalidade", jogador.get("vitalidade", 15))
-        jogador["vitalidade"] = min(max_vit, jogador.get("vitalidade", 10) + cura)
-        print(f"[Descanso] Você recuperou Vitalidade. (HP Atual: {jogador['vitalidade']})")
-        layout.imprimir_lento("Com o corpo preparado, você inicia a lenta e cuidadosa descida pelo paredão quando o sol encoberto nasce.")
-
-    elif escolha_descida == "2":
         layout.imprimir_lento(
-            "Kuroi Shin'en não dorme, e você também não. Você guarda a espada nas costas e agarra as pedras pontiagudas, "
-            "iniciando uma descida arriscada. A pressa o faz ganhar terreno e tempo."
+            "Você a arranca. É uma Opala Vulcânica, quente ao toque, emanando uma força vigorosa."
         )
         jogador["honra"] += 1
-        print("[Honra +1] O espírito de um samurai é incansável.")
+        layout.console.print("\n[bold green]+1 de Honra por eliminar uma abominação antiga.[/bold green]")
+        layout.console.print("[bold yellow][Item Adicionado: Opala Vulcânica (+5 HP Máximo)][/bold yellow]")
+        
+        # Atualização correta do Inventário e Status
+        if "inventario" not in jogador: jogador["inventario"] = []
+        jogador["inventario"].append("Opala Vulcânica")
+        jogador["max_vitalidade"] += 5
+        jogador["vitalidade"] += 5
+        
+        layout.esperar_enter()
+        
         layout.imprimir_lento(
-            "Você chega à base da floresta muito antes do esperado, ganhando vantagem posicional e evitando as "
-            "patrulhas diurnas que rondam a fronteira da mata."
+            "As pedras colapsadas do golem fornecem abrigo perfeito contra a umidade da caverna. "
+            "Exausto da jornada subterrânea, você raspa algumas pedras de sílex para fazer uma pequena fogueira."
         )
-        jogador["vantagem_floresta"] = True
+        # Acampamento
+        jogador = sistemas.acampamento_fogueira(jogador, capitulo_atual=1, contexto="caverna")
 
-    else:
-        layout.imprimir_lento("Hesitando no limite do abismo, uma rajada de vento gelado quase o joga para baixo, forçando-o a descer às pressas.")
-        jogador["vitalidade"] -= 1
-
+    # Espera antes de sair da rota, para o jogador ler como ficou a fogueira
+    layout.esperar_enter("[dim]A tela será limpa para exibir seu status atualizado...[/dim]")
     return jogador
 
 # ==========================================
-# INÍCIO DO CAPÍTULO E ESCOLHA DE ROTA
+# INÍCIO DO CAPÍTULO 1
 # ==========================================
 def jogar(jogador):
-    layout.cabecalho("CAPÍTULO 1: A QUEDA DO MUNDO")
+    layout.cabecalho("CAPÍTULO 1", "O Despertar do Mundo")
 
     layout.imprimir_lento(
-        "A descida da montanha é árdua. A temperatura aumenta, mas a sensação de morte no ar "
-        "torna o clima sufocante. Na base do cume principal, a trilha se divide em duas."
+        "A tempestade no cume finalmente ficou para trás. "
+        "Você chega à encruzilhada na encosta da montanha. O vento sopra em duas direções distintas.\n\n"
+        "À esquerda, o caminho desce em direção aos escombros da antiga vila de treinamento militar, "
+        "congelada no tempo e envolta em uma névoa densa e uivante. O orgulho passado do seu clã jaz lá.\n\n"
+        "À direita, os portões de pedra desmoronados para as Cavernas da Mandíbula escancaram a escuridão. "
+        "Um abismo subterrâneo repleto de lendas de horrores rastejantes e rituais profanos."
     )
 
-    print("\nOpções de Caminho:")
-    print("1 - A Estrada Imperial (Caminho aberto, probabilidade de encontrar humanos e patrulhas).")
-    print("2 - As Cavernas da Mandíbula (Atalho imerso em escuridão, covil de feras).")
+    layout.console.print("\n[bold]Qual caminho você escolherá para a descida?[/bold]")
+    layout.console.print("[white]1 - A Vila de Treinamento (A Rota das Ruínas de Neve).[/white]")
+    layout.console.print("[white]2 - As Cavernas da Mandíbula (A Rota das Trevas Subterrâneas).[/white]")
 
-    escolha_caminho = input("\nPor onde você seguirá? (1 ou 2): ").strip()
-
-    layout.divisoria()
+    escolha_caminho = ""
+    while escolha_caminho not in ["1", "2"]:
+        layout.limpar_buffer_teclado()
+        escolha_caminho = input("\nEscolha (1 ou 2): ").strip()
 
     if escolha_caminho == "1":
-        jogador["rota_cap1"] = "estrada"
-        jogador = cena_estrada(jogador)
+        jogador = cena_vila_gelo(jogador)
     elif escolha_caminho == "2":
-        jogador["rota_cap1"] = "caverna"
         jogador = cena_caverna(jogador)
-    else:
-        print("Sem saber para onde ir, você vagueia e perde o equilíbrio nas pedras.")
-        jogador["vitalidade"] -= 1
-        return jogar(jogador)
 
     return jogador

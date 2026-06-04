@@ -108,10 +108,12 @@ def _exibir_caracteres(token, pilha_tags, atraso, pular_animacao_ref):
     for char in token:
         console.print(f"{prefixo}{char}{sufixo}", end="")
         
+        # Se a animação não foi pulada ainda, checamos o teclado e esperamos
         if not pular_animacao_ref[0]:
             if checar_skip():
                 pular_animacao_ref[0] = True
-            elif not pular_animacao_ref[0]:
+                limpar_buffer_teclado() # Limpa o restante do buffer imediatamente
+            else:
                 time.sleep(atraso)
 
 def imprimir_lento(texto, atraso=0.015):
@@ -136,15 +138,22 @@ def divisoria():
     console.print(f"[dim cyan]{'━' * LARGURA_TELA}[/dim cyan]")
 
 # ==========================================
-# PAINEL DE STATUS (GRID FLUIDO - SEM EMOJIS)
+# PAINEL DE STATUS (GRID EXPANDIDO - RPG)
 # ==========================================
 def painel_status(jogador):
-    """Ficha do Personagem adaptada para Width Full, usando cores em vez de Emojis"""
+    """Ficha do Personagem Completa: Vitais, Atributos, Habilidades e Inventário"""
     
+    # Cálculos Essenciais
     max_hp = jogador.get("max_vitalidade", jogador.get("vitalidade", 0))
-    hp_atual = jogador['vitalidade']
+    hp_atual = jogador.get('vitalidade', 0)
+    
+    max_eter = jogador.get("max_eter", 50)
     eter_atual = jogador.get('eter', 0)
+    
     nivel = jogador.get('nivel', 1)
+    xp_atual = jogador.get('xp', 0)
+    # Lógica Exponencial de XP: 100, 200, 400, 800...
+    xp_necessario = 100 * (2 ** (nivel - 1)) 
     
     bonus_defesa = jogador.get("bonus_defesa", 0)
     mod_destreza = jogador.get("destreza", 10) // 4
@@ -155,56 +164,68 @@ def painel_status(jogador):
     elif jogador.get("espada_quebrada"): arma = "Cabo Quebrado"
 
     inventario = jogador.get("inventario", [])
+    habilidades = jogador.get("habilidades", [])
     hp_cor = "red" if hp_atual < (max_hp/3) else "green"
     
+    # Criando o Grid Full Width
     tabela = Table(expand=True, show_header=True, box=box.SIMPLE_HEAD, padding=(0, 2))
     
     tabela.add_column("Vitais", justify="left", style="bold", no_wrap=True)
     tabela.add_column("Atributos", justify="left", style="bold", no_wrap=True)
+    tabela.add_column("Habilidades", justify="left", style="cyan", no_wrap=True)
     tabela.add_column("Inventário", justify="left", style="white", ratio=1, no_wrap=True)
     tabela.add_column("", justify="left", style="white", ratio=1, no_wrap=True)
-    tabela.add_column("", justify="left", style="white", ratio=1, no_wrap=True)
 
-    def obter_item(idx):
-        if idx == 0 and len(inventario) == 0:
-            return "[dim]Vazio[/dim]"
-        elif idx < len(inventario):
-            return f"- {inventario[idx]}"
+    def obter_item(lista, idx, texto_vazio):
+        if idx == 0 and len(lista) == 0:
+            return f"[dim]{texto_vazio}[/dim]"
+        elif idx < len(lista):
+            return f"- {lista[idx]}"
         return ""
 
     # Linha 1 
     tabela.add_row(
         f"[{hp_cor}]HP: {hp_atual}/{max_hp}[/{hp_cor}]", 
-        f"[white]Kenjutsu: {jogador['kenjutsu']}[/white]", 
-        obter_item(0), obter_item(1), obter_item(2)
+        f"[white]Kenjutsu: {jogador['kenjutsu']}[/white]",
+        obter_item(habilidades, 0, "Nenhuma"),
+        obter_item(inventario, 0, "Vazio"), 
+        obter_item(inventario, 1, "")
     )
     
     # Linha 2 
     tabela.add_row(
-        f"[cyan]Éter: {eter_atual}/50[/cyan]", 
-        f"[green]Destreza: {jogador['destreza']}[/green]", 
-        obter_item(3), obter_item(4), obter_item(5)
+        f"[cyan]Éter: {eter_atual}/{max_eter}[/cyan]", 
+        f"[green]Destreza: {jogador['destreza']}[/green]",
+        obter_item(habilidades, 1, ""),
+        obter_item(inventario, 2, ""), 
+        obter_item(inventario, 3, "")
     )
     
     # Linha 3 
     tabela.add_row(
         f"[yellow]Honra: {jogador['honra']}[/yellow]", 
         f"[magenta]Conhecimento: {jogador['conhecimento']}[/magenta]",
-        obter_item(6), obter_item(7), obter_item(8)
+        obter_item(habilidades, 2, ""),
+        obter_item(inventario, 4, ""), 
+        obter_item(inventario, 5, "")
     )
 
     # Linha 4 
     tabela.add_row(
         f"[white]Arma:[/white] [cyan]{arma}[/cyan]",
         f"[blue]Defesa (CA): {defesa_total}[/blue]",
-        obter_item(9), obter_item(10), obter_item(11)
+        obter_item(habilidades, 3, ""),
+        obter_item(inventario, 6, ""), 
+        obter_item(inventario, 7, "")
     )
     
-    # Linha 5 
+    # Linha 5 (Exibe o XP progressivo)
     tabela.add_row(
         f"[yellow]Nível: {nivel}[/yellow]",
-        "", 
-        obter_item(12), obter_item(13), obter_item(14)
+        f"[dim]XP: {xp_atual}/{xp_necessario}[/dim]", 
+        obter_item(habilidades, 4, ""),
+        obter_item(inventario, 8, ""), 
+        obter_item(inventario, 9, "")
     )
 
     console.print(Panel(
@@ -251,6 +272,7 @@ def menu_inicial():
     
     escolha = ""
     while escolha not in ["1", "2", "3"]:
+        limpar_buffer_teclado() # Limpa sujeiras antes de pedir input
         escolha = input("\nEscolha sua ação: ").strip()
         
     return escolha
