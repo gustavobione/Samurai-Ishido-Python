@@ -195,7 +195,8 @@ def iniciar_combate(jogador, nome_inimigo, hp_inimigo, defesa_inimigo, min_dano,
         elif acao == "2":
             if eter_atual >= 10:
                 jogador["eter"] -= 10
-                jogador.setdefault("atributos_usados", update(["destreza", "eter"]))
+                jogador.setdefault("atributos_usados", set()).add("destreza")
+                jogador.setdefault("atributos_usados", set()).add("eter")
                 layout.imprimir_lento("[bold cyan]PASSOS FANTASMAS![/bold cyan] Você vira névoa, desviando e surgindo nas costas do inimigo.")
                 turno_inimigo = False
                 
