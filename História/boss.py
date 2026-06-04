@@ -1,287 +1,243 @@
 # boss.py
-import time
-import random
 import layout
+import sistemas
+import random
+import time
 
-def rolar_teste(atributo_nome, valor_atributo, dificuldade=20):
-    d20 = random.randint(1, 20)
-    total = d20 + valor_atributo
-    print(f"\n[Rolando teste de {atributo_nome.capitalize()}]")
-    time.sleep(1)
-    print(f"[d20: {d20} + {atributo_nome.capitalize()}: {valor_atributo} = {total}] (Dificuldade: {dificuldade})")
-    time.sleep(1)
-    return total >= dificuldade
-
-def fase_1_ilusoes(jogador):
-    layout.cabecalho("FASE 1: O FEITICEIRO DOS MIL ROSTOS")
+def cena_fase_1(jogador):
+    layout.cabecalho("FASE 1: O FEITICEIRO DOS MIL ROSTOS", "A Sanidade Despedaça")
     
-    hp_kuroi = 60
+    layout.imprimir_lento(
+        "Kuroi Shin'en não saca uma lâmina. Ele apenas levanta dois dedos. O corpo dele se desfaz "
+        "em fumaça negra arcana. Em um piscar de olhos, o Salão do Trono se enche com **DEZ** cópias "
+        "perfeitas do feiticeiro flutuando no ar. "
+        "Todas elas começam a canalizar esferas de chamas de éter negro, prontas para incinerar a sua existência."
+    )
     
-    while hp_kuroi > 0 and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        print(f"♥ Seu HP: {jogador['vitalidade']}  |  💀 HP Kuroi: {hp_kuroi}")
+    layout.console.print("\n[bold]Desafio Final 1/3: As Ilusões Mortais[/bold]")
+    layout.console.print(f"[cyan]Éter Atual: {jogador.get('eter',0)}/{jogador.get('max_eter',50)}[/cyan]")
+    layout.console.print("[magenta]1 - [Analisar (Magia)][/magenta] Gastar 10 de Éter para focar seus olhos através da mentira e achar o verdadeiro.")
+    layout.console.print("[white]2 - [Conhecimento Dificuldade 23][/white] Fechar os olhos e tentar ouvir o único coração que bate.")
+    layout.console.print("[white]3 - [Destreza Dificuldade 25][/white] Usar velocidade absoluta do Nitoryu para cortar as dez cópias antes que a magia dispare.")
+    
+    layout.limpar_buffer_teclado()
+    acao = input("\nSua ação (1, 2 ou 3): ").strip()
+    
+    if acao == "1" and jogador.get("eter", 0) >= 10:
+        jogador["eter"] -= 10
+        jogador.setdefault("atributos_usados", set()).add("eter")
+        layout.imprimir_lento("\n[magenta]Com a Visão Mística, as cópias ficam cinzas, enquanto o verdadeiro Kuroi brilha em vermelho vivo. Você avança certeiro e corta seu ombro![/magenta]")
+    else:
+        if acao == "1": layout.imprimir_lento("\n[red]Éter insuficiente. A dor obscurece sua visão mágica.[/red]")
         
+        if acao == "3":
+            if sistemas.rolar_teste(jogador, "destreza", 25):
+                layout.imprimir_lento("\n[green]Você vira um furacão de lâminas! As cópias estouram como vidro. A última é o Kuroi verdadeiro, que grita ao receber um corte da Lua Prateada no peito![/green]")
+            else:
+                layout.imprimir_lento("\n[red]Você é rápido, mas a magia é instantânea! As dez esferas de chamas arcanas bombardeiam você no ar![/red]")
+                jogador["vitalidade"] -= 15
+        else:
+            if sistemas.rolar_teste(jogador, "conhecimento", 23):
+                layout.imprimir_lento("\n[green]Você bloqueia os sentidos falsos. No silêncio total, nove cópias são ocas. A da esquerda respira. Você abre os olhos e corta o ombro dele![/green]")
+            else:
+                layout.imprimir_lento("\n[red]Os sons e as risadas das ilusões esmagam sua concentração. Kuroi dispara o fogo infernal nas suas costas![/red]")
+                jogador["vitalidade"] -= 15
+
+    layout.esperar_enter()
+    return jogador
+
+
+def cena_fase_2(jogador):
+    if jogador["vitalidade"] <= 0: return jogador
+    
+    layout.cabecalho("FASE 2: A REJEIÇÃO DA LINHAGEM", "O Poder do Xogum Roubado")
+    
+    layout.imprimir_lento(
+        "Kuroi Shin'en rasteja para trás, o sangue negro manchando o mármore sagrado.\n"
+        "[bold yellow]'O MUNDO SUPERA O SANGUE!'[/bold yellow], ele berra aspergindo sua raiva."
+    )
+    layout.imprimir_lento(
+        "Ele ergue as duas mãos para o teto. As dez partes do *Disco do Abismo* rodam violentamente, "
+        "descendo para cobri-lo. Uma cúpula esférica de energia cósmica, impenetrável e imutável, se forma.\n"
+        "'Este é o poder do Imperador! E ele me obedece agora!', grita Kuroi, protegido pelo próprio artefato "
+        "roubado da sua família."
+    )
+    
+    layout.console.print("\n[bold]Desafio Final 2/3: O Falso Deus[/bold]")
+    layout.console.print(f"[yellow]Honra Atual: {jogador.get('honra', 10)}[/yellow]")
+    layout.console.print("[white]1 - [Honra Nv 20+ Exigida][/white] O Caminho do Rei. Abaixar as armas, caminhar até o escudo e exigir que o Disco reconheça o Herdeiro Legítimo por sua pureza.")
+    if "Corte do Vazio" in jogador.get("habilidades", []):
+        layout.console.print(f"[magenta]2 - [Corte do Vazio][/magenta] Gastar 15 Éter (Éter Atual: {jogador.get('eter',0)}) para ignorar o bloqueio físico com o Sol Negro.")
+    layout.console.print("[white]3 - [Kenjutsu Dificuldade 27][/white] O aço das estrelas forjado não cede. Colidir o Nitoryu na barreira com toda a sua energia vital.")
+    
+    layout.limpar_buffer_teclado()
+    acao = input("\nComo destruir o que não pode ser destruído? ").strip()
+    
+    if acao == "1":
+        if jogador.get("honra", 10) >= 20:
+            layout.imprimir_lento(
+                "\n[green]Você embainha as espadas. Você caminha em silêncio. A essência cristalina dos Shiro brilha "
+                "ao redor do seu corpo. Ao encostar a mão no escudo corrompido, a Honra pura anula as trevas. "
+                "O Disco do Abismo o reconhece, pisca em azul e... desliga a barreira de Kuroi! O mago entra em choque brutal.[/green]"
+            )
+        else:
+            layout.imprimir_lento(
+                "\n[red]Você tenta apelar ao sagrado, mas o Disco recua. Suas mãos estão manchadas demais com atalhos, "
+                "emboscadas e desonra. A barreira sente suas falhas e o repele violentamente com um choque divino![/red]"
+            )
+            jogador["vitalidade"] -= 18
+            
+    elif acao == "2" and "Corte do Vazio" in jogador.get("habilidades", []) and jogador.get("eter", 0) >= 15:
+        jogador["eter"] -= 15
+        jogador.setdefault("atributos_usados", set()).add("eter")
         layout.imprimir_lento(
-            "O corpo de Kuroi se desfaz em fumaça negra. De repente, o salão se enche com DEZ cópias "
-            "perfeitas do feiticeiro. Todas começam a conjurar esferas de fogo arcano que flutuam "
-            "ao redor de você, prontas para incinerar sua carne."
+            "\n[magenta]Você não tenta quebrar a barreira, você rasga a tela do universo. A lâmina ônix do Sol Negro "
+            "atravessa a magia divina como papel, rasgando o peito de Kuroi de dentro para fora![/magenta]"
         )
+    else:
+        if acao == "2": layout.imprimir_lento("\n[red]Requisitos de Éter falharam.[/red]")
         
-        print("\nComo você encontra e ataca o verdadeiro Kuroi?")
-        print("1 - [Conhecimento] Fechar os olhos, ignorar a visão e rastrear a perturbação original no Disco do Abismo.")
-        print("2 - [Destreza] Mover-se na velocidade do som, cortando todas as dez cópias antes que a magia dispare.")
-        
-        acao = input("\nEscolha (1 ou 2): ").strip()
-        
-        if acao == "1":
-            if rolar_teste("conhecimento", jogador["conhecimento"], 24):
-                layout.imprimir_lento(
-                    "SUCESSO! Nove assinaturas arcanas são ocas. Uma pulsa com batimentos cardíacos. "
-                    "Você avança de olhos fechados e perfura o ar. O Sol Negro rasga o manto de Kuroi, "
-                    "dissipando os clones!"
-                )
-                dano = random.randint(10, 20) + (jogador["kenjutsu"] // 2)
-                hp_kuroi -= dano
-                layout.imprimir_lento(f"> Kuroi grita e cospe sangue! (-{dano} HP)")
-            else:
-                layout.imprimir_lento("FALHA! A magia o engana. Você atinge um fantasma que explode em chamas infernais no seu rosto!")
-                jogador["vitalidade"] -= random.randint(8, 15)
-        
-        elif acao == "2":
-            if rolar_teste("destreza", jogador["destreza"], 25):
-                layout.imprimir_lento(
-                    "SUCESSO! O Nitoryu se torna um redemoinho inrastreável. Você cruza o salão decepando "
-                    "cada ilusão até que o aço verdadeiro encontre carne e osso. O feiticeiro tomba para trás!"
-                )
-                dano = random.randint(10, 20) + (jogador["kenjutsu"] // 2)
-                hp_kuroi -= dano
-                layout.imprimir_lento(f"> A Kagekiri queima as costelas do mago! (-{dano} HP)")
-            else:
-                layout.imprimir_lento("FALHA! Você é rápido, mas a feitiçaria é instantânea. Oito esferas de fogo o atingem simultaneamente!")
-                jogador["vitalidade"] -= random.randint(10, 18)
+        layout.imprimir_lento("\n[dim]Você ergue o Sol e a Lua acima da cabeça, canalizando a força de um furacão![/dim]")
+        if sistemas.rolar_teste(jogador, "kenjutsu", 27):
+            layout.imprimir_lento(
+                "\n[green]SUCESSO ABSOLUTO! O choque astronômico de duas armas estelares contra um artefato da mesma origem cria uma explosão cósmica. "
+                "A barreira divina racha e estilhaça em milhões de fragmentos![/green]"
+            )
         else:
-            layout.imprimir_lento("A hesitação é letal. Os clones bombardeiam você.")
-            jogador["vitalidade"] -= 12
+            layout.imprimir_lento(
+                "\n[red]FALHA! A barreira é imutável. A força do impacto rebate para o seu próprio corpo, deslocando seus ombros e lançando você pelo ar ensanguentado![/red]"
+            )
+            jogador["vitalidade"] -= 20
 
+    layout.esperar_enter()
     return jogador
 
-def fase_2_escudo(jogador):
+
+def cena_fase_3(jogador):
     if jogador["vitalidade"] <= 0: return jogador
     
-    layout.cabecalho("FASE 2: A REJEIÇÃO DA LINHAGEM")
+    layout.cabecalho("FASE FINAL: O AVATAR DO CAOS", "O Fim dos Tempos")
     
     layout.imprimir_lento(
-        "Kuroi Shin'en rasteja para trás, o sangue negro manchando o mármore. "
-        "'O MUNDO SUPERA O SANGUE!', ele berra, erguendo as duas mãos em direção ao Disco do Abismo.\n"
-        "As dez partes do meteorito giram violentamente. Uma cúpula de energia cósmica negra e "
-        "impenetrável se forma ao redor do feiticeiro.\n"
-        "'Este é o poder do seu pai! E ele me obedece agora!', zomba Kuroi, protegido pela barreira divina."
+        "Sem escudo, sangrando e derrotado nas artes místicas, Kuroi Shin'en ri.\n"
+        "Uma risada que racha as pilastras do teto. Não é mais uma voz humana.\n\n"
+        "[bold red]'SE EU NÃO POSSO GOVERNAR O QUE HÁ SOBRE O CÉU... ELE NÃO EXISTIRÁ!'[/bold red]\n\n"
+        "O mago estende as mãos trêmulas e funde a si próprio o núcleo do Disco do Abismo. "
+        "A carne de Kuroi evapora, sendo substituída por pura matéria negra cósmica. Ele cresce de forma abissal. "
+        "Dez... quinze metros de altura."
+    )
+    layout.imprimir_lento(
+        "O teto do castelo é vaporizado. O céu tempestuoso da Capital serve de palco.\n"
+        "O Avatar do Caos surge: Uma massa rotativa de trevas com braços de fogo, "
+        "orbes que gravitam em sua cintura e centenas de olhos que choram sangue negro. "
+        "O mundo treme."
+    )
+    layout.esperar_enter("[dim]A lenda de Ishido termina aqui...[/dim]")
+    
+    # O CHEFE FINAL NO SISTEMA DE COMBATE OFICIAL
+    # Atribuí uma resistência à "Físico" para que habilidades como Lâmina de Gelo e Corte do Vazio brilhem aqui
+    resultado = sistemas.iniciar_combate(
+        jogador, 
+        nome_inimigo="AVATAR DO CAOS (DEUS DO ABISMO)", 
+        hp_inimigo=200, 
+        defesa_inimigo=22, 
+        min_dano=12, 
+        max_dano=25, 
+        xp_recompensa=0, # Fim do jogo
+        fraqueza="Nenhuma", 
+        resistencia="Físico"
     )
     
-    quebrou_escudo = False
-    
-    while not quebrou_escudo and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        print(f"♥ Seu HP: {jogador['vitalidade']}  |  🛡️ Barreira: IMPENETRÁVEL")
-        
-        print("\nComo destruir o poder de um deus corrompido?")
-        print("1 - [Honra] Apelar para a linhagem sagrada. Exigir que o Disco reconheça o herdeiro legítimo.")
-        print("2 - [Kenjutsu] O aço do Sol Negro e da Lua Prateada também é feito de meteorito. Usar força bruta máxima!")
-        
-        acao = input("\nEscolha (1 ou 2): ").strip()
-        
-        if acao == "1":
-            if jogador.get("honra", 10) >= 20:
-                layout.imprimir_lento(
-                    "Você embainha as duas espadas. Caminha desarmado em direção ao escudo mortal. "
-                    "A cada passo, uma memória dos sacrifícios do seu clã ressoa em sua alma. "
-                    "'Eu sou Ishido. E a sombra não governa a luz!'\n"
-                    "Você encosta a mão nua na barreira. A Honra pura do Xogum reage com o artefato. "
-                    "O Disco do Abismo pulsa em azul e... desliga a barreira de Kuroi! O mago entra em choque."
-                )
-                quebrou_escudo = True
-            else:
-                layout.imprimir_lento(
-                    "O Disco pulsa, mas não o reconhece. Suas mãos estão manchadas demais com atalhos "
-                    "desonrosos. A barreira te repele com uma força esmagadora!"
-                )
-                jogador["vitalidade"] -= 15
-        
-        elif acao == "2":
-            if rolar_teste("kenjutsu", jogador["kenjutsu"], 26):
-                layout.imprimir_lento(
-                    "SUCESSO ABSOLUTO! Você canaliza toda a energia vital do seu corpo nas lâminas gêmeas. "
-                    "O choque do meteorito terrestre contra a cúpula cósmica cria uma explosão ensurdecedora. "
-                    "A barreira racha como vidro e estilhaça, arremessando Kuroi contra a parede!"
-                )
-                quebrou_escudo = True
-            else:
-                layout.imprimir_lento(
-                    "FALHA! A barreira é infinitamente densa. Suas espadas ricocheteiam com uma força avassaladora, "
-                    "deslocando seus ombros e lançando você aos ares."
-                )
-                jogador["vitalidade"] -= 15
-        else:
-            layout.imprimir_lento("A feitiçaria absorve o oxigênio do salão, asfixiando você.")
-            jogador["vitalidade"] -= 10
-            
     return jogador
 
-def fase_3_avatar(jogador):
-    if jogador["vitalidade"] <= 0: return jogador
-    
-    layout.cabecalho("FASE FINAL: O AVATAR DO CAOS")
-    
-    layout.imprimir_lento(
-        "Sem escudo e ferido mortalmente, Kuroi Shin'en começa a rir. Uma risada que não soa humana, "
-        "mas como montanhas se partindo.\n"
-        "'Se eu não posso governar este mundo... ELE NÃO EXISTIRÁ!'\n"
-        "O mago estica a mão, e o Disco do Abismo mergulha diretamente no peito dele. A carne de Kuroi "
-        "derrete, substituída por pura matéria cósmica. Ele cresce. Sete, dez, quinze metros de altura."
-    )
-    layout.imprimir_lento(
-        "Ele não é mais um humano. É uma massa torcida de trevas, com tentáculos de chamas e dezenas de "
-        "olhos vermelhos que choram sangue negro. O teto da torre é vaporizado, revelando o céu "
-        "tempestuoso onde o Avatar do Caos o encara."
-    )
-    
-    hp_avatar = 150
-    mod_defesa = (jogador.get("destreza", 10) + jogador.get("kenjutsu", 10)) // 4
-    defesa_jogador = 10 + mod_defesa + jogador.get("bonus_defesa", 0)
-    bonus_ataque_avatar = 15 # Extremamente mortal
-    
-    while hp_avatar > 0 and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        max_hp = jogador.get("max_vitalidade", jogador["vitalidade"])
-        print(f"♥ Seu HP: {jogador['vitalidade']}/{max_hp}  |  🛡️ Sua Defesa: {defesa_jogador}  |  💀 HP do Avatar: {hp_avatar}")
-        
-        print("1 - [Arte Nitoryu: Eclipse] Descarregar fúria total e ativar o Roubo de Vida Lunar.")
-        print("2 - [Esquiva Perfeita] Focar apenas em não morrer neste turno (Ignora o ataque do inimigo se o teste der certo).")
-        
-        acao = input("Ação (1 ou 2): ").strip()
-        
-        if acao == "1":
-            bonus_arma = jogador.get("bonus_dano_arma", 6)
-            dano_jogador = random.randint(10, 20) + (jogador.get("kenjutsu", 10) // 2) + bonus_arma
-            
-            layout.imprimir_lento(f"> Você salta nos tentáculos da fera! O Sol e a Lua rasgam a escuridão, causando {dano_jogador} de dano cósmico.")
-            hp_avatar -= dano_jogador
-            
-            cura_lunar = dano_jogador // 2
-            jogador["vitalidade"] = min(max_hp, jogador["vitalidade"] + cura_lunar)
-            layout.imprimir_lento(f"> A Lua Prateada devora a essência do caos, curando você (+{cura_lunar} HP).")
-            
-            if hp_avatar <= 0: break
-            
-        elif acao == "2":
-            if rolar_teste("destreza", jogador["destreza"], 25):
-                layout.imprimir_lento("> O Avatar atinge o solo onde você estava. A Torre treme, mas você escapa sem um arranhão neste turno!")
-                continue # Pula o turno de ataque do boss!
-            else:
-                layout.imprimir_lento("> Você tenta esquivar, mas a magnitude do golpe o alcança pela onda de choque!")
-        else:
-            layout.imprimir_lento("> Você trava diante do horror!")
-            
-        # Turno do Monstro
-        layout.imprimir_lento("\n[Turno do Inimigo: O AVATAR ATACA]")
-        dado_ataque = random.randint(1, 20)
-        total_ataque = dado_ataque + bonus_ataque_avatar
-        time.sleep(0.5)
-        print(f" 🎲 (Rolou {dado_ataque} + Bônus {bonus_ataque_avatar} = {total_ataque}) vs Sua Defesa ({defesa_jogador})")
-        time.sleep(0.5)
-        
-        if total_ataque >= defesa_jogador:
-            dano_sofrido = random.randint(15, 25)
-            layout.imprimir_lento(f"> 💥 UM GOLPE DEVASTADOR! A gravidade o esmaga. Você perde {dano_sofrido} de HP.")
-            jogador["vitalidade"] -= dano_sofrido
-        else:
-            layout.imprimir_lento("> ⚔️ Com pura maestria e intuição samurai, você deflete uma montanha de trevas com as suas espadas gêmeas!")
-
-    return jogador
 
 def epilogo(jogador):
-    layout.cabecalho("O EPÍLOGO: O PESO DE UMA ERA")
+    layout.cabecalho("EPÍLOGO", "O Peso de Uma Era")
     
     layout.imprimir_lento(
-        "A deidade de sombras solta um uivo que rasga as nuvens de Takenoko, dissolvendo-se "
-        "em cinzas que caem como neve negra sobre a Capital. Kuroi Shin'en está morto."
+        "O Avatar se retorce em uma explosão de energia silenciosa. Um clarão engole os céus, "
+        "e as nuvens corrompidas de Takenoko se dissolvem pela primeira vez em décadas. "
+        "A poeira cósmica cai como neve sobre a torre arruinada. Kuroi Shin'en não existe mais."
     )
     layout.imprimir_lento(
-        "O salão desaba silenciosamente. No centro da poeira, flutuando a meio metro do chão e "
-        "pulsando com uma energia infinita e corrompida, está o Disco do Abismo. O artefato que "
-        "enlouqueceu seu pai e iniciou vinte anos de tormento."
+        "Você desaba de joelhos, coberto de fuligem e sangue.\n"
+        "Flutuando a meio metro do chão de mármore partido, pulsando com energia infinita "
+        "e sem mestre, está o [bold cyan]Disco do Abismo[/bold cyan]. O artefato supremo. "
+        "Aquele que corrompeu o Shogunato."
     )
     layout.imprimir_lento(
-        "Você embainha a Lua Prateada, mas mantém o Sol Negro (Kagekiri) firme na sua mão. "
-        "Você olha para o Disco. Ele sussurra promessas para você. Com esse poder absoluto, "
-        "você poderia reconstruir tudo. Ninguém jamais ousaria desafiar o novo Xogum de Takenoko. "
-        "Você seria um deus."
+        "Ele canta para você. O disco oferece a cura do mundo, a imortalidade, o poder absoluto. "
+        "Você poderia assumir o Trono de Obsidiana. Ninguém jamais ousaria contestar o Xogum das Sombras."
     )
-    layout.imprimir_lento("Mas você também lembra das cinzas, dos escravos, e do túmulo congelado de Kazunari.")
     
-    print("\nO destino do mundo repousa nas suas espadas. Qual é a sua escolha final?")
-    print("1 - [A Purificação] A magia é a fonte de toda a ruína. Desferir um golpe fatal e destruir o Disco do Abismo para sempre.")
-    print("2 - [O Novo Ciclo] O poder não é bom nem mau, é apenas uma ferramenta. Reivindicar o Disco e assumir o Trono de Obsidiana.")
+    layout.console.print("\n[bold]As Lâminas na sua mão tremem. Qual será a sua última ordem?[/bold]")
+    layout.console.print(f"[yellow]Honra Atual: {jogador.get('honra', 10)}[/yellow]")
+    layout.console.print("[white]1 - [A Purificação][/white] O poder absoluto corrompe absolutamente. Desferir um golpe letal para estilhaçar o Disco para sempre.")
+    layout.console.print("[white]2 - [O Império de Cinzas][/white] Reivindicar o Disco. Absorvê-lo para restaurar Takenoko sob o seu punho de ferro.")
     
-    escolha_final = input("\nA sua decisão ecoará pela eternidade (1 ou 2): ").strip()
+    layout.limpar_buffer_teclado()
+    escolha_final = input("\nSua decisão ecoará pela eternidade (1 ou 2): ").strip()
     
     layout.divisoria()
     
     if escolha_final == "1":
         layout.imprimir_lento(
-            "Você ergue a Kagekiri acima da cabeça. O meteorito ressoa com um brilho ofuscante, "
-            "purificado pelo sacrifício de toda a sua jornada. Você desce a lâmina com um grito "
-            "que corta a própria essência do tempo.\n"
-            "O aço colide com o Disco. O mundo inteiro fica em silêncio.\n"
-            "Uma onda de choque branca explode pela torre, varrendo toda a Província Central. "
-            "A energia destrói a feitiçaria, derrete os monstros remanescentes e purifica os pântanos.\n"
-            "A Torre desmorona ao seu redor, mas você salta para a luz. O céu, pela primeira vez "
-            "em vinte anos, é banhado pelo sol natural. Takenoko está livre. A Era da Magia acabou.\n"
-            "Anos mais tarde, lendas falarão do samurai descalço de duas espadas que vagava "
-            "como um curandeiro pelos arrozais, um homem sem senhores, mas com a alma de um império."
+            "Você ergue o Sol Negro e a Lua Prateada cruzados acima da cabeça. "
+            "A aura de Kazunari e as memórias das vítimas da neve, da floresta e da forja guiam seus braços.\n"
+            "Com um grito primal, você corta a própria fundação da magia!\n\n"
+            "O Disco do Abismo racha. Uma explosão branca pacífica varre a capital. Toda a corrupção é varrida da existência.\n"
+            "A Torre desmorona para sempre. Você salta a salvo pelos telhados enquanto a luz do amanhecer, pura e natural, banha o seu rosto."
         )
+        layout.imprimir_lento(
+            "\n[bold green]Anos depois, os arrozais florescem em Mizu. Não há mais lordes demônios, "
+            "tampouco Xoguns intocáveis. Apenas lendas folclóricas de um espadachim descalço "
+            "com duas lâminas estelares vagando pelo Japão restaurado, vivendo a vida de um homem livre.[/bold green]"
+        )
+        
     else:
         layout.imprimir_lento(
-            "Você abaixa a lâmina. O Disco sente a sua ambição e gira mais rápido. "
-            "Você estende a mão e toca o artefato antigo.\n"
-            "Imediatamente, as veias dos seus braços ficam negras. Uma coroa de chamas gélidas "
-            "se forma acima da sua cabeça. O poder é inimaginável. As vozes de bilhões de mortos "
-            "ecoam em sua mente, subjugando-se à sua vontade imortal.\n"
-            "Você caminha lentamente e se senta no Trono de Obsidiana. As portas da torre se "
-            "escancaram. Os exércitos de Yokais, antes bestas selvagens, ajoelham-se em uníssono "
-            "nos pátios inferiores. O mundo encontrou ordem. Uma ordem de punho de ferro e escuridão.\n"
-            f"O Imperador Nobutatsu enlouqueceu. O Mago Kuroi fracassou. Mas o Lorde Demônio {jogador['nome']}, "
-            "o Xogum do Abismo, reinará para sempre."
+            "Você abaixa as lâminas e caminha até o Disco. A sua alma cansada de dor e perda aceita o sacrifício.\n"
+            "Ao encostar no artefato, as chamas cósmicas sobem pelo seu braço, mesclando-se à sua carne.\n"
+            "Seus olhos assumem uma cor eterna, sem fundo. As vozes de bilhões de mortos ajoelham-se em sua mente."
+        )
+        layout.imprimir_lento(
+            "\n[bold red]Você se senta no trono despedaçado de seu pai.\n"
+            "Kuroi foi fraco. O Imperador foi tolo.\n"
+            f"As portas do mundo se abrem para os horrores reanimados sob o seu comando. Lorde {jogador['nome']}, "
+            "o Arauto das Duas Lâminas, levanta a mão e mergulha o leste do mundo no seu Império Pessoal de Morte e Fogo.\n"
+            "A tirania encontrou o seu Deus da Guerra absoluto.[/bold red]"
         )
 
-    layout.cabecalho("FIM DE JOGO")
-    print(f"Muito obrigado por jogar Samurai Ishido. Status Final de Honra: {jogador['honra']}")
     time.sleep(3)
+    layout.cabecalho("FIM DE JOGO", "Obrigado por jogar Samurai Ishido")
+    
+    layout.console.print(f"[bold cyan]Seu Samurai Finalizou com:[/bold cyan]")
+    layout.console.print(f"Honra: {jogador.get('honra', 0)}")
+    layout.console.print(f"Kenjutsu: {jogador.get('kenjutsu', 0)} | Destreza: {jogador.get('destreza', 0)} | Conhecimento: {jogador.get('conhecimento', 0)}")
+    layout.console.print(f"Inventário Retido: {', '.join(jogador.get('inventario', ['Vazio']))}")
+    
+    layout.esperar_enter("\nPressione Enter para fechar as cortinas do palco...")
 
 
+# ==========================================
+# GESTOR DO BOSS
+# ==========================================
 def jogar(jogador):
-    layout.cabecalho("O CLÍMAX: O TRONO DO ABISMO")
-    
-    layout.imprimir_lento(
-        "Você cruza os gigantescos portões de Ouro Negro. A câmara do trono é uma abóbada que desafia "
-        "a sanidade, construída inteiramente de antigas armaduras derretidas."
-    )
-    layout.imprimir_lento(
-        "No centro, pairando sobre o piso, está o Mago Kuroi Shin'en. Apesar das décadas, ele aparenta "
-        "uma juventude profana, sustentada pelas dez partes giratórias do Disco do Abismo flutuando acima dele."
-    )
-    layout.imprimir_lento(
-        "Ele sorri. 'A ovelha desgarrada do clã Shiro. Pensei que você teria morrido congelado "
-        "junto daquele velho aleijado na montanha.'"
-    )
-    
-    jogador = fase_1_ilusoes(jogador)
-    if jogador["vitalidade"] <= 0: return layout.imprimir_lento("Sua alma foi devorada pelas ilusões de Kuroi.")
-    
-    jogador = fase_2_escudo(jogador)
-    if jogador["vitalidade"] <= 0: return layout.imprimir_lento("A linhagem do seu pai o rejeitou na morte.")
-    
-    jogador = fase_3_avatar(jogador)
-    if jogador["vitalidade"] <= 0: return layout.imprimir_lento("O Caos consumiu o último resquício de luz do Japão.")
-    
+    jogador = cena_fase_1(jogador)
+    if jogador["vitalidade"] <= 0: 
+        layout.imprimir_lento("\n[dim]As ilusões o enlouqueceram. Seu corpo virou cinzas na Câmara do Trono.[/dim]")
+        return jogador
+        
+    jogador = cena_fase_2(jogador)
+    if jogador["vitalidade"] <= 0: 
+        layout.imprimir_lento("\n[dim]A barreira cósmica esmagou sua existência antes de você sequer piscar.[/dim]")
+        return jogador
+        
+    jogador = cena_fase_3(jogador)
+    if jogador["vitalidade"] <= 0: 
+        layout.imprimir_lento("\n[dim]O Avatar das Trevas devorou as estrelas e engoliu o mundo em escuridão infinita.[/dim]")
+        return jogador
+        
     epilogo(jogador)
+    
+    return jogador
