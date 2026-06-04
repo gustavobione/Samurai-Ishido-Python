@@ -40,11 +40,11 @@ O jogo foi otimizado com a biblioteca nativa `msvcrt` para captura de teclado di
 
 **1. Clone o repositório**
 ```bash
-git clone [https://github.com/seu-usuario/samurai-ishido.git](https://github.com/seu-usuario/samurai-ishido.git)
+git clone https://github.com/gustavobione/Samurai-Ishido-Python.git
 cd samurai-ishido
 ```
 
-2. Crie um Ambiente Virtual (Opcional, mas recomendado)
+**2. Crie um Ambiente Virtual (Opcional, mas recomendado)**
 
 ```Bash
 python -m venv venv
@@ -54,18 +54,18 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-3. Instale as dependências
+**3. Instale as dependências**
 
 ```Bash
 pip install -r requirements.txt
 ```
 
-4. Prepare as pastas de áudio (Opcional)
+**4. Prepare as pastas de áudio (Opcional)**
 Se desejar a experiência completa com som, crie uma pasta chamada audio na raiz do projeto e adicione seus arquivos .mp3 correspondentes aos chamados no código (ex: audio/vento_montanha.mp3, audio/saque_espada.mp3, audio/batalha_inicio.mp3). O jogo possui tratamento de erro e funcionará normalmente em silêncio caso os arquivos não sejam encontrados.
 
-PS: Parte de audio está parametrizada mas ainda não foi implementada, somente em funções futuras.
+**PS: Parte de audio está parametrizada mas ainda não foi implementada, somente em funções futuras.**
 
-5. Inicie o jogo
+**5. Inicie o jogo**
 
 ```Bash
 python História/_main.py
@@ -75,10 +75,10 @@ python História/_main.py
 
 O código foi componentizado para facilitar a expansão narrativa:
 
-main.py - O gestor principal que conecta os capítulos.
+**main.py** - O gestor principal que conecta os capítulos.
 
-layout.py - Interface de usuário, formatação de textos (Rich) e áudio (Pygame).
+**layout.py** - Interface de usuário, formatação de textos (Rich) e áudio (Pygame).
 
-sistemas.py - Motor de RPG (Rolagens, Combate, Level Up, Fogueiras e Cálculos de Dano).
+**sistemas.py** - Motor de RPG (Rolagens, Combate, Level Up, Fogueiras e Cálculos de Dano).
 
-capitulo_0.py a boss.py - Os arquivos de roteiro contendo as árvores de decisões, rotas e narrativas do jogo.
+**capitulo_0.py a boss.py** - Os arquivos de roteiro contendo as árvores de decisões, rotas e narrativas do jogo.
