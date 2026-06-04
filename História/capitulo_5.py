@@ -1,279 +1,336 @@
 # capitulo_5.py
-import time
-import random
 import layout
-
-def rolar_teste(atributo_nome, valor_atributo, dificuldade=20):
-    d20 = random.randint(1, 20)
-    total = d20 + valor_atributo
-    print(f"\n[Rolando teste de {atributo_nome.capitalize()}]")
-    time.sleep(1)
-    print(f"[d20: {d20} + {atributo_nome.capitalize()}: {valor_atributo} = {total}] (Dificuldade: {dificuldade})")
-    time.sleep(1)
-    return total >= dificuldade
-
-def iniciar_combate_torre(jogador, nome_inimigo, hp_inimigo, min_dano, max_dano):
-    """Combate especial do Cap 5: Inclui hordas e o Roubo de Vida Lunar."""
-    layout.imprimir_lento(f"\n⚔️ COMBATE INICIADO: {nome_inimigo.upper()} ⚔️")
-    
-    bonus_armadura = jogador.get("bonus_defesa", 0)
-    mod_defesa = (jogador.get("destreza", 10) + jogador.get("kenjutsu", 10)) // 4
-    defesa_jogador = 10 + mod_defesa + bonus_armadura
-    bonus_ataque_inimigo = max_dano // 2
-    
-    while hp_inimigo > 0 and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        max_hp = jogador.get("max_vitalidade", jogador["vitalidade"])
-        print(f"♥ Seu HP: {jogador['vitalidade']}/{max_hp}  |  🛡️ Sua Defesa: {defesa_jogador}  |  💀 HP Inimigo: {hp_inimigo}")
-        
-        print("1 - [Arte Nitoryu: Eclipse] Atacar com o Sol e a Lua (Ataque Múltiplo + Roubo de Vida).")
-        print("2 - [Fugir] Tentar escapar para a sala anterior (Teste de Destreza).")
-        
-        acao = input("Ação (1 ou 2): ").strip()
-        
-        if acao == "1":
-            # Dano Massivo do Daisho
-            bonus_arma = jogador.get("bonus_dano_arma", 6)
-            dano_jogador = random.randint(5, 12) + (jogador.get("kenjutsu", 10) // 2) + bonus_arma
-            
-            layout.imprimir_lento(f"> A Kagekiri queima como um sol escuro! Você causa {dano_jogador} de dano ao inimigo.")
-            hp_inimigo -= dano_jogador
-            
-            # MECÂNICA DO LUAR: Roubo de Vida (Cura 50% do dano causado)
-            cura_lunar = dano_jogador // 2
-            jogador["vitalidade"] = min(max_hp, jogador["vitalidade"] + cura_lunar)
-            layout.imprimir_lento(f"> A Mizukiri brilha com o luar! O sangue inimigo revitaliza você (+{cura_lunar} HP).")
-            
-            if hp_inimigo <= 0:
-                layout.imprimir_lento(f"\nOs corpos caem aos seus pés. Você sobreviveu ao combate!")
-                return "vitoria"
-        
-        elif acao == "2":
-            if rolar_teste("destreza", jogador.get("destreza", 10), 22):
-                layout.imprimir_lento("> Você usa as sombras e recua para a sala anterior. Fuga bem-sucedida!")
-                return "fuga"
-            else:
-                layout.imprimir_lento("> Você tenta recuar, mas a horda bloqueia a porta!")
-        else:
-            layout.imprimir_lento("> Ação inválida! Você hesita!")
-            
-        # Turno do Inimigo
-        if hp_inimigo > 0:
-            layout.imprimir_lento(f"\n[Turno Inimigo: {nome_inimigo}]")
-            dado_ataque = random.randint(1, 20)
-            total_ataque = dado_ataque + bonus_ataque_inimigo
-            time.sleep(0.5)
-            print(f" 🎲 O inimigo ataca! (Rolou {dado_ataque} + Bônus {bonus_ataque_inimigo}) vs Sua Defesa ({defesa_jogador})")
-            time.sleep(0.5)
-            
-            if total_ataque >= defesa_jogador:
-                dano_sofrido = random.randint(min_dano, max_dano)
-                layout.imprimir_lento(f"> 💥 O ataque rompe sua guarda! Você perde {dano_sofrido} de HP.")
-                jogador["vitalidade"] -= dano_sofrido
-            else:
-                layout.imprimir_lento(f"> ⚔️ Suas duas espadas giram como um redemoinho, bloqueando o ataque perfeito!")
-            
-    if jogador["vitalidade"] <= 0: return "morte"
-
+import sistemas
+import random
 
 # ==========================================
-# CENA 1: A ENTRADA E O LABIRINTO (ANDAR INFERIOR)
+# FUNÇÃO AUXILIAR DE PROVAÇÕES
 # ==========================================
-def labirinto_andar_1(jogador):
-    layout.cabecalho("A TORRE DO ABISMO - O LABIRINTO DAS SOMBRAS")
-
-    layout.imprimir_lento(
-        "Você cruza os antigos portões da Província Central. Onde outrora ficava o majestoso Castelo "
-        "do seu pai, o Xogum, agora se ergue a Torre do Abismo. Uma estrutura colossal de obsidiana viva, "
-        "com veias pulsantes de magia negra que sobem até as nuvens tempestuosas.\n"
-        "Kuroi Shin'en sabe que você está aqui. O palácio foi torcido magicamente em um labirinto mortal."
-    )
+def provacao_narrativa(jogador, numero, nome, atributo, dificuldade, dano, texto_intro, texto_sucesso, texto_falha):
+    """Executa provações rápidas mantendo a densidade e punindo falhas brutalmente."""
+    if jogador["vitalidade"] <= 0: return False
     
-    # Variáveis de controle do Labirinto
-    progresso_andar = False
-    porta_direita_limpa = False
-    porta_esquerda_limpa = False
-
-    while not progresso_andar and jogador["vitalidade"] > 0:
-        layout.divisoria()
-        layout.imprimir_lento("Você está no Hall das Ilusões (Andar 1). Existem três corredores massivos.")
-        print("1 - O Corredor da Esquerda (Cheira a ervas antigas e sangue pisado).")
-        print("2 - O Corredor da Direita (Ecoa com o som de múltiplas armaduras batendo).")
-        print("3 - A Grande Escadaria Central (Selada por uma porta com escrituras arcanas).")
-        
-        escolha = input("\nPara onde você segue? (1, 2 ou 3): ").strip()
-        
-        if escolha == "1":
-            if porta_esquerda_limpa:
-                layout.imprimir_lento("Você já saqueou este corredor. Não há mais nada além de cadáveres.")
-            else:
-                layout.imprimir_lento(
-                    "\nVocê entra no Corredor da Esquerda. É a antiga Enfermaria da Guarda.\n"
-                    "De repente, o chão cede! Paredes com espetos se fecham na sua direção!"
-                )
-                if rolar_teste("destreza", jogador.get("destreza", 10), 23):
-                    layout.imprimir_lento(
-                        "SUCESSO! Você salta pelas paredes, quicando entre as lâminas mortais "
-                        "e aterrissa no final da sala ileso.\n"
-                        "No altar preservado, você encontra um frasco brilhante com o brasão Shiro. "
-                        "Um Elixir Imperial ancestral!"
-                    )
-                    jogador["max_vitalidade"] += 15
-                    jogador["vitalidade"] = jogador["max_vitalidade"]
-                    print("[Loot Épico: Elixir Imperial bebido! (+15 HP Máximo e Cura Total!)]")
-                    porta_esquerda_limpa = True
-                else:
-                    dano = random.randint(10, 18)
-                    jogador["vitalidade"] -= dano
-                    layout.imprimir_lento(f"FALHA! Você é rasgado pelos espetos antes de conseguir rolar para fora (-{dano} HP). A armadilha destrói a sala. Beco sem saída.")
-                    porta_esquerda_limpa = True # Destruída
-                    
-        elif escolha == "2":
-            if porta_direita_limpa:
-                layout.imprimir_lento("Apenas as cinzas dos mortos-vivos restam neste corredor.")
-            else:
-                layout.imprimir_lento(
-                    "\nVocê entra no Antigo Arsenal. Três Guardas de Elite Reanimados e dois Mastins Demônios se viram para você!\n"
-                    "Eles atacam em sincronia. Uma horda implacável!"
-                )
-                resultado = iniciar_combate_torre(jogador, "Horda do Arsenal (5 Inimigos)", hp_inimigo=85, min_dano=6, max_dano=14)
-                
-                if resultado == "vitoria":
-                    layout.imprimir_lento("Com sua fúria lunar, você dizimou o esquadrão inteiro. Em uma arca trancada, você encontra poeira de cristal.")
-                    jogador.setdefault("inventario", []).append("Pó de Estrela")
-                    print("[Item Adicionado: Pó de Estrela (Aumenta os sentidos mágicos no futuro)]")
-                    porta_direita_limpa = True
-                elif resultado == "fuga":
-                    layout.imprimir_lento("Você foge de volta para o Hall Principal, ofegante.")
-                    
-        elif escolha == "3":
-            layout.imprimir_lento(
-                "\nVocê se aproxima da porta da Escadaria Central. Ela não tem fechadura, apenas uma charada Yokai entalhada a fogo.\n"
-                "'Sou a fome que não tem estômago. Devoro a madeira, derreto o aço, e o vento me dá asas. "
-                "Mas se a água me tocar, eu morro. O que sou eu?'"
-            )
-            print("1 - O Sangue")
-            print("2 - O Fogo")
-            print("3 - O Medo")
-            print("4 - [Usar Conhecimento] Tentar decifrar as runas ao redor para burlar o enigma.")
-            
-            resposta = input("\nQual a sua resposta? ").strip()
-            
-            if resposta == "2":
-                layout.imprimir_lento("SUCESSO! A porta de pedra se fragmenta em cinzas. O caminho para o Andar Superior está aberto!")
-                progresso_andar = True
-            elif resposta == "4":
-                if rolar_teste("conhecimento", jogador.get("conhecimento", 10), 24):
-                    layout.imprimir_lento("SUCESSO! Sua mente afiada reconhece o feitiço de selamento. Você usa o cabo da espada para raspar a runa central, destrancando a porta!")
-                    progresso_andar = True
-                else:
-                    layout.imprimir_lento("FALHA! As runas brilham em vermelho e disparam um relâmpago arcano no seu peito!")
-                    jogador["vitalidade"] -= 10
-                    print("Você toma 10 de dano mágico e é arremessado para trás.")
-            else:
-                layout.imprimir_lento("Resposta incorreta! A porta cospe uma bola de chamas em você!")
-                jogador["vitalidade"] -= 10
-                print("Você toma 10 de dano por queimaduras.")
-        else:
-            layout.imprimir_lento("Você perde tempo andando em círculos.")
-
-    return jogador
-
-# ==========================================
-# CENA 2: A ASCENSÃO E O TERROR DUPLO
-# ==========================================
-def labirinto_andar_2(jogador):
-    if jogador["vitalidade"] <= 0: return jogador
-
-    layout.cabecalho("O JARDIM DE CARNE E A DUPLA ABOMINAÇÃO")
-
-    layout.imprimir_lento(
-        "Você sobe as escadas e chega ao Pátio Interno. O que era um lindo jardim zen com lago de carpas "
-        "foi corrompido. As árvores choram seiva vermelha e as pedras flutuam com gravidade zero.\n"
-        "O silêncio é quebrado por asas batendo e cascos pesados. Do céu escuro, mergulham DUAS abominações "
-        "conjuntas criadas para proteger os aposentos de Kuroi.\n"
-        "À sua esquerda pousa um Tengu da Tempestade (Senhor dos Ventos). À sua direita, aterrissa um "
-        "Gashadokuro (Um esqueleto gigante de 5 metros forjado com os ossos dos samurais mortos)."
-    )
+    layout.divisoria()
+    layout.imprimir_lento(f"[bold]Provação {numero}/13: {nome}[/bold]\n{texto_intro}")
+    layout.esperar_enter(f"[dim]Pressione Enter para testar {atributo.capitalize()} (Dificuldade {dificuldade})...[/dim]")
     
-    print("\nO ataque deles será simultâneo. A vida e a morte se fundem neste combate. Como iniciar a luta?")
-    print("1 - [Kenjutsu] Avançar frontalmente rodopiando as duas espadas como um tornado de lâminas.")
-    print("2 - [Conhecimento] Focar primeiro no elo de magia necromântica do esqueleto gigante.")
-    
-    tem_po_estrela = "Pó de Estrela" in jogador.get("inventario", [])
-    if tem_po_estrela:
-        print("3 - [Item] Lançar o 'Pó de Estrela' no ar para cegar o Tengu e expor os pontos fracos de ambos.")
-
-    escolha = input("\nEscolha (1, 2" + (" ou 3" if tem_po_estrela else "") + "): ").strip()
-    
-    vantagem_boss = False
-
-    if escolha == "1":
-        if rolar_teste("kenjutsu", jogador["kenjutsu"], 25):
-            layout.imprimir_lento("SUCESSO! O impacto da sua investida decepa a perna do esqueleto e corta a asa do Tengu antes da luta começar!")
-            vantagem_boss = True
-        else:
-            layout.imprimir_lento("FALHA! O vendaval do Tengu te atira contra o punho do Esqueleto Gigante!")
-            jogador["vitalidade"] -= 12
-            print("Você perde 12 HP pelo esmagamento!")
-
-    elif escolha == "2":
-        if rolar_teste("conhecimento", jogador["conhecimento"], 24):
-            layout.imprimir_lento("SUCESSO! Você nota um selo de papel no crânio do monstro de osso. Você arremessa uma adaga improvisada e rasga o selo, cortando o HP da criatura pela metade!")
-            vantagem_boss = True
-        else:
-            layout.imprimir_lento("FALHA! Você tenta focar, mas a velocidade do Tengu é monstruosa. Ele rasga suas costas com garras afiadas!")
-            jogador["vitalidade"] -= 10
-            print("Você perde 10 HP na emboscada!")
-            
-    elif escolha == "3" and tem_po_estrela:
-        layout.imprimir_lento("Você arremessa o pó estelar! A magia residual cega os monstros e interrompe a sincronia deles. Você tem a vantagem absoluta!")
-        vantagem_boss = True
-        jogador.get("inventario").remove("Pó de Estrela")
-        jogador["honra"] += 1
-
-    # Define a dificuldade do combate duplo
-    if vantagem_boss:
-        hp_dupla = 80
-        dano_max = 14
+    if sistemas.rolar_teste(jogador, atributo, dificuldade):
+        layout.imprimir_lento(f"[green]{texto_sucesso}[/green]")
+        return True
     else:
-        hp_dupla = 110
-        dano_max = 20 # Letal se ele não defender bem!
-
-    if jogador["vitalidade"] > 0:
-        resultado = iniciar_combate_torre(jogador, "Tengu & Gashadokuro (Dupla)", hp_inimigo=hp_dupla, min_dano=8, max_dano=dano_max)
-        
-        if resultado == "morte" or jogador["vitalidade"] <= 0: return jogador
-        
-        layout.imprimir_lento(
-            "\nVocê crava a Kagekiri no peito do Tengu e gira a Mizukiri explodindo o crânio do gigante.\n"
-            "A magia se desfaz. As portas imensas no fundo do jardim se abrem sozinhas, rangendo como almas atormentadas."
-        )
-        
-    return jogador
+        layout.imprimir_lento(f"[red]{texto_falha}[/red]")
+        jogador["vitalidade"] -= dano
+        layout.console.print(f"[bold red]-{dano} HP.[/bold red]")
+        return False
 
 # ==========================================
-# CENA 3: A ANTECÂMARA E O FIM DA ESCALADA
+# ROTA 1: A ALA SANGRENTA (O CAMINHO DA GUERRA)
+# Foco: Combates brutais, resistência física e armadilhas de cerco.
 # ==========================================
-def transicao_boss(jogador):
-    if jogador["vitalidade"] <= 0: return jogador
-    
-    layout.cabecalho("A ANTECÂMARA DO ABISMO")
-
+def rota_ala_sangrenta(jogador):
+    layout.cabecalho("A ALA SANGRENTA", "O Bastião da Carnificina")
     layout.imprimir_lento(
-        "Banhado no sangue e fuligem de dezenas de bestas, você cruza as portas duplas e adentra "
-        "a Antecâmara do Salão do Trono.\n"
-        "O corredor final é forrado de estátuas dos antigos Xoguns da sua linhagem. Todos com os "
-        "rostos deformados pela corrupção. A respiração pesa. A presença arcana é tão forte "
-        "que o próprio ar vibra em roxo e preto.\n"
-        "No final do corredor majestoso repousa um portão de ouro negro. Atrás dele, "
-        "no topo da torre, o Feiticeiro Kuroi Shin'en detém o poder absoluto do Disco do Abismo.\n"
-        "Você olha para as suas duas lâminas. Elas pulsam em harmonia com as batidas do seu coração. "
-        "Há vinte anos, Kazunari fugiu desta mesma sala com você, apenas um bebê em prantos. "
-        "Hoje, o herdeiro voltou. E ele não está chorando."
+        "Você arromba os portões da esquerda. O cheiro de ferro e sangue velho é sufocante. "
+        "Esta era a antiga ala militar do seu clã, agora transformada num abatedouro contínuo "
+        "onde os Ashigarus de Kuroi treinam massacrando prisioneiros. O caminho até o topo será pavimentado em corpos."
     )
     
-    layout.imprimir_lento("\nO Labirinto foi vencido. O destino de Takenoko será decidido no confronto final.")
+    # 1. Armadilha de Cerco
+    provacao_narrativa(jogador, 1, "O Fosso de Lanças", "destreza", 18, 10,
+        "Assim que você pisa no corredor, o chão cede. Lanças de obsidiana emergem do fosso escuro.",
+        "Seus reflexos são sobre-humanos. Você pisa na ponta de uma lança ascendente e salta para a borda segura.",
+        "Uma das lanças rasga sua coxa antes de você conseguir rolar para fora do fosso!")
+
+    # 2. O Muro de Escudos
+    provacao_narrativa(jogador, 2, "A Falange Morta", "kenjutsu", 20, 12,
+        "Um esquadrão de esqueletos com escudos de torre bloqueia o corredor, avançando lentamente em formação cerrada.",
+        "O Sol Negro derrete os escudos de ferro como manteiga, abrindo caminho em um único giro de Nitoryu.",
+        "O impacto com os escudos repele seu ataque, e eles o esmagam com a parede de ferro antes de você recuar!")
+        
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 3. Combate 1
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 3/13: O Capitão Sanguinário[/bold]\nUm demônio de três metros com duas clavas de espinhos surge rindo da escuridão.")
+    sistemas.iniciar_combate(jogador, "Capitão Corrompido", hp_inimigo=60, defesa_inimigo=15, min_dano=6, max_dano=12, xp_recompensa=50, fraqueza="Gelo", resistencia="Físico")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 4. Gás Alucinógeno
+    provacao_narrativa(jogador, 4, "A Névoa da Loucura", "conhecimento", 19, 8,
+        "Os dutos de ar expelem uma fumaça roxa. O gás ferve o sangue e induz o guerreiro a atacar a si mesmo.",
+        "Você prende a respiração e reconhece o padrão do feitiço, meditando em movimento até passar a zona de perigo.",
+        "Você inala o gás. As alucinações fazem você cortar o próprio braço em confusão antes de sair do transe!")
+
+    # 5. A Passagem Secreta
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 5/13: A Passagem Oculta[/bold]")
+    layout.imprimir_lento("Para evitar um batalhão inteiro marchando no pátio inferior, você busca uma rota pelas paredes internas.")
+    layout.console.print("[white]1 - [Destreza Dificuldade 21][/white] Escalar o poço do elevador de carga.")
+    layout.console.print("[white]2 - [Conhecimento Dificuldade 18][/white] Encontrar o tijolo solto da arquitetura antiga Shiro.")
+    layout.limpar_buffer_teclado()
+    if input("Escolha (1 ou 2): ").strip() == "2":
+        if sistemas.rolar_teste(jogador, "conhecimento", 18): layout.imprimir_lento("[green]Você acha o mecanismo escondido e passa ileso.[/green]")
+        else: 
+            layout.imprimir_lento("[red]Você não acha a passagem e atrai a atenção de patrulheiros![/red]")
+            jogador["vitalidade"] -= 10
+    else:
+        if sistemas.rolar_teste(jogador, "destreza", 21): layout.imprimir_lento("[green]Sua força física o carrega poço acima em silêncio.[/green]")
+        else: 
+            layout.imprimir_lento("[red]A corda arrebenta e você despenca, machucando a coluna.[/red]")
+            jogador["vitalidade"] -= 10
+            
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 6 a 11 - A Escadaria Contínua (Combates em horda)
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provações 6 a 11: A Escadaria do Triunfo[/bold]\n"
+        "Você chega à Espiral Interminável. Aqui, não há furtividade. Não há fuga. "
+        "Apenas onda após onda de horrores que descem os degraus para impedi-lo de subir. "
+        "A Arte do Eclipse será posta à prova máxima."
+    )
+    layout.esperar_enter("[dim]Pressione Enter para iniciar a chacina...[/dim]")
+    
+    sistemas.iniciar_combate(jogador, "Horda de Rastejantes", hp_inimigo=70, defesa_inimigo=13, min_dano=5, max_dano=10, xp_recompensa=40, fraqueza="Gelo", resistencia="Nenhuma")
+    if jogador["vitalidade"] <= 0: return jogador
+    sistemas.iniciar_combate(jogador, "Samurais Sem Cabeça", hp_inimigo=80, defesa_inimigo=16, min_dano=6, max_dano=11, xp_recompensa=60, fraqueza="Físico", resistencia="Fogo")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 12. A Ponte Colapsando
+    provacao_narrativa(jogador, 12, "O Colapso", "destreza", 22, 15,
+        "A batalha destruiu a integridade da escadaria. A ponte que liga aos aposentos reais desaba no abismo!",
+        "Você corre contra a gravidade, saltando sobre as pedras em queda livre e fincando a Kagekiri na borda superior!",
+        "O chão cede sob seus pés. Você cai dezenas de metros antes de se pendurar por uma bandeira rasgada, deslocando o ombro!")
+
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 13. O GUARDIÃO REAL
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provação 13/13: O Guardião Real[/bold]\n"
+        "As portas de ébano se abrem. No Salão do Julgamento aguarda o [bold yellow]Guardião Raiden, o Kensei do Trovão[/bold yellow]. "
+        "Seu corpo é puro músculo reforçado com placas de aço. Ele empunha uma alabarda que estala com eletricidade roxa.\n"
+        "'Um inseto rastejou longe demais', ele troveja. 'Vou devolver suas cinzas ao vulcão!'"
+    )
+    sistemas.iniciar_combate(jogador, "Guardião Raiden (CHEFE DA ROTA)", hp_inimigo=120, defesa_inimigo=18, min_dano=8, max_dano=16, xp_recompensa=200, fraqueza="Nenhuma", resistencia="Físico")
+    
+    return jogador
+
+
+# ==========================================
+# ROTA 2: O JARDIM DAS ILUSÕES (O CAMINHO DA MENTE)
+# Foco: Testes de Sabedoria, armadilhas mágicas e Yokais.
+# ==========================================
+def rota_jardim_ilusoes(jogador):
+    layout.cabecalho("O JARDIM DAS ILUSÕES", "O Labirinto da Loucura")
+    layout.imprimir_lento(
+        "Você segue pelo caminho central, um enorme jardim flutuante dentro da torre. "
+        "A gravidade é distorcida. Cachoeiras fluem para o alto. O céu falso é estrelado por "
+        "olhos cósmicos. Este é o domínio onde Kuroi enlouquece seus inimigos antes de matá-los."
+    )
+    
+    # 1. A Flor Devoradora
+    provacao_narrativa(jogador, 1, "O Aroma da Morte", "conhecimento", 18, 10,
+        "Campos de lótus de cristal bloqueiam o caminho. O pólen prateado tenta hipnotizar sua mente e atraí-lo para os dentes das flores.",
+        "Você fecha a respiração e foca nas memórias do mestre Kazunari, ignorando o canto hipnótico.",
+        "A música entra em sua mente. Você caminha em direção a uma flor e as pétalas se fecham no seu braço, rasgando sua carne!")
+
+    # 2. O Labirinto de Espelhos
+    provacao_narrativa(jogador, 2, "Os Clones de Vidro", "conhecimento", 20, 10,
+        "Você entra num corredor de espelhos infinitos. Seu próprio reflexo saca a espada e ataca de dentro do vidro!",
+        "Você fecha os olhos. Usando apenas o som da respiração, você quebra o espelho mestre, estilhaçando o corredor.",
+        "Confuso pela ilusão de ótica, você é golpeado pelas costas pelo seu próprio reflexo espectral!")
+        
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 3. Combate 1
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 3/13: A Aranha das Memórias[/bold]\nUma Jorogumo (Mulher-Aranha) desce do teto falso. O rosto dela é o da sua mãe morta.")
+    sistemas.iniciar_combate(jogador, "Jorogumo Espectral", hp_inimigo=55, defesa_inimigo=14, min_dano=5, max_dano=10, xp_recompensa=50, fraqueza="Físico", resistencia="Gelo")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 4. A Gravidade Invertida
+    provacao_narrativa(jogador, 4, "A Queda Para o Céu", "destreza", 20, 12,
+        "O feitiço da sala é ativado e a gravidade se inverte. Você cai em direção a um teto repleto de estalactites afiadas!",
+        "Você saca o Sol Negro e a Lua Prateada no ar, fatiando as pedras antes do impacto e caindo suavemente.",
+        "Você tenta se agarrar a um pilar, mas a força gravitacional o joga contra as pedras, quebrando suas costelas!")
+
+    # 5. A Passagem Mística
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 5/13: O Selo do Falso Sol[/bold]")
+    layout.imprimir_lento("Para cruzar o jardim suspenso, há uma porta com símbolos arcanos rodopiando.")
+    layout.console.print("[magenta]1 - [Analisar (Magia)][/magenta] Gastar 10 de Éter para hackear o selo.")
+    layout.console.print("[white]2 - [Conhecimento Dificuldade 21][/white] Resolver o quebra-cabeça astrológico.")
+    layout.limpar_buffer_teclado()
+    if input("Escolha (1 ou 2): ").strip() == "1" and jogador.get("eter", 0) >= 10:
+        jogador["eter"] -= 10
+        layout.imprimir_lento("[magenta]Você inunda as trancas com Éter. A magia demoníaca se purifica e a porta cede.[/magenta]")
+    else:
+        if sistemas.rolar_teste(jogador, "conhecimento", 21): layout.imprimir_lento("[green]Você reorganiza as estrelas do selo mentalmente, e a porta se abre.[/green]")
+        else: 
+            layout.imprimir_lento("[red]A combinação errada explode em chamas gélidas no seu rosto![/red]")
+            jogador["vitalidade"] -= 10
+            
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 6 a 11 - O Desespero Mágico (Combates e ilusões)
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provações 6 a 11: A Purificação do Jardim[/bold]\n"
+        "O jardim recusa-se a deixá-lo passar. O ambiente vomita construtos de terra, sombras elementais e "
+        "monges necromantes de uma só vez. A magia do Abismo pulsa incessantemente."
+    )
+    layout.esperar_enter("[dim]Pressione Enter para fatiar as trevas...[/dim]")
+    
+    sistemas.iniciar_combate(jogador, "Monges do Fogo Fátuo", hp_inimigo=60, defesa_inimigo=15, min_dano=5, max_dano=11, xp_recompensa=45, fraqueza="Gelo", resistencia="Nenhuma")
+    if jogador["vitalidade"] <= 0: return jogador
+    sistemas.iniciar_combate(jogador, "Gárgulas de Jade", hp_inimigo=75, defesa_inimigo=17, min_dano=7, max_dano=13, xp_recompensa=65, fraqueza="Nenhuma", resistencia="Físico")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 12. O Enigma do Sacrifício
+    provacao_narrativa(jogador, 12, "O Espelho da Alma", "kenjutsu", 22, 15,
+        "A última porta é feita de vidro inquebrável. A escritura exige que você corte o próprio reflexo, o que exige técnica perfeita para não rebater o golpe.",
+        "O Sol Negro corta o espaço. O golpe atravessa o vidro cristalino cortando apenas o selo, sem feri-lo.",
+        "Sua técnica foi imperfeita. O golpe de espada ricocheteia no vidro mágico e atinge seu próprio flanco!")
+
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 13. O GUARDIÃO REAL
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provação 13/13: O Guardião Real[/bold]\n"
+        "No Templo de Lótus aguarda a [bold magenta]Guardiã Tsukuyomi, a Senhora das Ilusões[/bold magenta]. "
+        "Ela levita sobre o chão, ladeada por orbes de gelo negro e empunhando um leque de lâminas afiadas.\n"
+        "'A mente humana é frágil, Ishido. Eu o farei esquecer de por que veio aqui antes de matá-lo!'"
+    )
+    sistemas.iniciar_combate(jogador, "Guardiã Tsukuyomi (CHEFE DA ROTA)", hp_inimigo=100, defesa_inimigo=19, min_dano=7, max_dano=18, xp_recompensa=200, fraqueza="Físico", resistencia="Gelo")
+    
+    return jogador
+
+
+# ==========================================
+# ROTA 3: AS CATACUMBAS SUSPENSAS (O CAMINHO DA FURTIVIDADE)
+# Foco: Agilidade extrema, abismos, armadilhas mecânicas e venenos.
+# ==========================================
+def rota_catacumbas_suspensas(jogador):
+    layout.cabecalho("AS CATACUMBAS SUSPENSAS", "O Abismo Não Tem Fundo")
+    layout.imprimir_lento(
+        "Você empurra a porta enferrujada à direita. A luz desaparece. Você se encontra em um abismo formidável. "
+        "Correntes grossas como troncos seguram celas enferrujadas e pedaços de alvenaria sobre um vácuo negro. "
+        "O vento assobia através dos esqueletos enforcados. O caminho exige destreza impecável."
+    )
+    
+    # 1. A Ponte de Correntes
+    provacao_narrativa(jogador, 1, "Os Elos do Medo", "destreza", 19, 10,
+        "Para acessar a primeira plataforma, você deve se equilibrar numa corrente bamba coberta de óleo de monstro.",
+        "Seu equilíbrio é inabalável. Como uma sombra, você corre sobre o ferro escorregadio até o outro lado.",
+        "Seu pé desliza! Você fica pendurado pelo braço, batendo violentamente o corpo contra a lateral de pedra.")
+
+    # 2. Chuva de Viúvas-Negras
+    provacao_narrativa(jogador, 2, "A Seda Sufocante", "kenjutsu", 20, 10,
+        "O teto está coberto de teias. Ao pisar na plataforma, centenas de aranhas-da-caverna desabam sobre você!",
+        "Um furacão de aço. A Lua Prateada cria um escudo giratório, fatiando os insetos antes que o toquem.",
+        "A seda prende sua espada! As aranhas mordem seu pescoço e costas, injetando veneno antes de você esmagá-las.")
+        
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 3. Combate 1
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 3/13: O Carcereiro Amaldiçoado[/bold]\nUm monstro cego gigante balança uma âncora acorrentada, patrulhando a ponte de pedra principal.")
+    sistemas.iniciar_combate(jogador, "Carcereiro Cego", hp_inimigo=65, defesa_inimigo=13, min_dano=5, max_dano=13, xp_recompensa=50, fraqueza="Nenhuma", resistencia="Nenhuma")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 4. A Parede Desmoronante
+    provacao_narrativa(jogador, 4, "Parkour Mortal", "destreza", 21, 12,
+        "O impacto do carcereiro cede a ponte! Você deve correr pelas paredes que estão desabando no abismo infinito.",
+        "Numa sequência épica de saltos diagonais pelas pedras em queda, você aterrissa em um terraço alto e seguro.",
+        "Uma pedra solta falha sob sua bota. Você cai, precisando usar o Arpéu para se puxar de volta, mas luxando feio o ombro.")
+
+    # 5. A Passagem Secreta
+    layout.divisoria()
+    layout.imprimir_lento("[bold]Provação 5/13: As Lâminas Pendulares[/bold]")
+    layout.imprimir_lento("O túnel à frente é um moedor de carne mecânico. Dezenas de machados pendulam do teto.")
+    layout.console.print("[cyan]1 - [Passos Fantasmas][/cyan] Gastar 10 de Éter para dar um dash de invulnerabilidade.")
+    layout.console.print("[white]2 - [Destreza Dificuldade 22][/white] Dançar entre a morte calculando o timing de cada pêndulo.")
+    layout.limpar_buffer_teclado()
+    if input("Escolha (1 ou 2): ").strip() == "1" and jogador.get("eter", 0) >= 10:
+        jogador["eter"] -= 10
+        layout.imprimir_lento("[cyan]Você pisca através do espaço, passando pelas lâminas intocável como fumaça.[/cyan]")
+    else:
+        if sistemas.rolar_teste(jogador, "destreza", 22): layout.imprimir_lento("[green]Com precisão cirúrgica, você escorrega e salta milimetricamente entre o aço mortal.[/green]")
+        else: 
+            layout.imprimir_lento("[red]Um erro de milissegundos! Um machado rasga um corte profundo transversal no seu peito![/red]")
+            jogador["vitalidade"] -= 12
+            
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 6 a 11 - O Ninho dos Assassinos (Furtividade / Emboscadas)
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provações 6 a 11: A Caçada nas Sombras[/bold]\n"
+        "As catacumbas se tornam um ninho de assassinos ninja corrompidos. Eles atacam atirando shurikens das trevas, "
+        "armando fios-de-tropeço venenosos e despencando do teto. É matar ou morrer na velocidade da luz."
+    )
+    layout.esperar_enter("[dim]Pressione Enter para enfrentar a guilda morta...[/dim]")
+    
+    sistemas.iniciar_combate(jogador, "Ninjas Espectrais", hp_inimigo=65, defesa_inimigo=16, min_dano=4, max_dano=9, xp_recompensa=50, fraqueza="Nenhuma", resistencia="Nenhuma")
+    if jogador["vitalidade"] <= 0: return jogador
+    sistemas.iniciar_combate(jogador, "A Besta das Correntes", hp_inimigo=85, defesa_inimigo=14, min_dano=7, max_dano=14, xp_recompensa=70, fraqueza="Físico", resistencia="Gelo")
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 12. O Último Salto
+    provacao_narrativa(jogador, 12, "O Salto da Fé", "destreza", 23, 15,
+        "A porta final fica isolada a dez metros de distância, sem pontes. Apenas uma fina corrente vertical pende no meio do vão.",
+        "Você salta no vazio, agarra a corrente em pêndulo perfeito, toma impulso e aterrissa na sacada final graciosamente.",
+        "Você erra o salto perfeito. Suas mãos escorregam na corrente e você despenca, fincando o Sol Negro na parede para travar a queda dolorosa.")
+
+    if jogador["vitalidade"] <= 0: return jogador
+
+    # 13. O GUARDIÃO REAL
+    layout.divisoria()
+    layout.imprimir_lento(
+        "[bold]Provação 13/13: O Guardião Real[/bold]\n"
+        "Nas varandas de mármore branco envoltas em névoa negra repousa o [bold blue]Guardião Shinigami, a Foice de Gelo[/bold blue]. "
+        "Um vulto assombroso em mantos rasgados, armado com duas foices encadeadas que emanam frio absoluto.\n"
+        "'As sombras me servem, ronin. E hoje, elas devorarão a sua luz!'"
+    )
+    sistemas.iniciar_combate(jogador, "Guardião Shinigami (CHEFE DA ROTA)", hp_inimigo=110, defesa_inimigo=20, min_dano=7, max_dano=15, xp_recompensa=200, fraqueza="Físico", resistencia="Gelo")
+    
+    return jogador
+
+
+# ==========================================
+# CENA FINAL: O PORTÃO DO FEITICEIRO
+# ==========================================
+def cena_transicao_kuroi(jogador):
+    if jogador["vitalidade"] <= 0: return jogador
+    
+    layout.cabecalho("O ÁPICE DO ABISMO", "Frente a Frente com o Destino")
+
+    layout.imprimir_lento(
+        "A carcaça do Guardião Real se dissolve no ar. O silêncio que se segue é ensurdecedor.\n\n"
+        "Você subiu através do sangue, da lama, do fogo, e da loucura mágica. "
+        "Você caminha ensanguentado, os pulmões em chamas, subindo os degraus de obsidiana "
+        "que levam à porta mais alta da Torre do Abismo.\n\n"
+        "Um portão circular gigantesco, adornado com estrelas e crânios de prata.\n"
+        "O Astrolábio Celestial.\n\n"
+        "Atrás desta porta está o Mago Kuroi Shin'en, o usurpador que assassinou seu pai, "
+        "destruiu seu clã, rasgou o braço de seu mestre Kazunari e transformou Takenoko "
+        "num império de cinzas."
+    )
+    
+    layout.imprimir_lento(
+        "\nVocê solta o ar lentamente. As mãos repousam com familiaridade mortífera sobre "
+        "os cabos do Sol Negro e da Lua Prateada. O Estilo Nitoryu atingiu a perfeição."
+    )
+    
+    layout.esperar_enter("[dim]Você empurra os portões celestiais com os dois braços...[/dim]")
+
+    # Como não temos um acampamento aqui e a luta final começa no próximo capítulo,
+    # curamos levemente o jogador para que ele não entre no boss final com 1 HP.
+    cura = 30
+    jogador["vitalidade"] = min(jogador.get("max_vitalidade", 100), jogador["vitalidade"] + cura)
+    layout.imprimir_lento(f"\n[green]A determinação inabalável da sua linhagem restaura seu foco (+{cura} HP).[/green]")
 
     return jogador
 
@@ -285,16 +342,31 @@ def jogar(jogador):
     layout.cabecalho("CAPÍTULO 5: A TORRE DO ABISMO")
 
     layout.imprimir_lento(
-        "O estilo Nitoryu tornou você uma lenda letal nas planícies, mas a torre que perfura as "
-        "nuvens exige mais do que apenas aço. Exige a mente fria de um verdadeiro samurai."
+        "A enorme torre espirala pelos céus corrompidos. Kuroi enclausurou-se no ápice. "
+        "A base da torre se divide em três pavilhões colossais, cada um ostentando uma horripilante arquitetura. "
+        "Apenas um pode ser escolhido para sua escalada final."
     )
 
-    jogador = labirinto_andar_1(jogador)
+    layout.console.print("\n[bold]Escolha o caminho para o topo da Torre:[/bold]")
+    layout.console.print("[white]1 - A Ala Sangrenta[/white] (O caminho da Guerra. Foco em força bruta, hordas pesadas e resistência).")
+    layout.console.print("[white]2 - O Jardim das Ilusões[/white] (O caminho da Mente. Foco em sanidade, magia e Yokais místicos).")
+    layout.console.print("[white]3 - As Catacumbas Suspensas[/white] (O caminho das Sombras. Foco em furtividade extrema e acrobacias mortais).")
+
+    escolha_caminho = ""
+    while escolha_caminho not in ["1", "2", "3"]:
+        layout.limpar_buffer_teclado()
+        escolha_caminho = input("\nEscolha sua trilha (1, 2 ou 3): ").strip()
+
+    if escolha_caminho == "1":
+        jogador = rota_ala_sangrenta(jogador)
+    elif escolha_caminho == "2":
+        jogador = rota_jardim_ilusoes(jogador)
+    elif escolha_caminho == "3":
+        jogador = rota_catacumbas_suspensas(jogador)
+
     if jogador["vitalidade"] <= 0: return jogador
     
-    jogador = labirinto_andar_2(jogador)
-    if jogador["vitalidade"] <= 0: return jogador
-    
-    jogador = transicao_boss(jogador)
+    # A transição épica para o Boss Final
+    jogador = cena_transicao_kuroi(jogador)
     
     return jogador

@@ -6,6 +6,7 @@ import capitulo_1
 import capitulo_2
 import capitulo_3
 import capitulo_4
+import capitulo_5
 import sistemas
 
 def checar_morte(jogador):
@@ -132,7 +133,7 @@ def iniciar_jogo():
 
     layout.esperar_enter("[dim]Pressione Enter para iniciar o Capítulo 4...[/dim]")
 
-        # ================= CAPÍTULO  =================
+        # ================= CAPÍTULO 4 =================
     layout.limpar_tela()
     
     jogador = capitulo_4.jogar(jogador)
@@ -143,6 +144,18 @@ def iniciar_jogo():
     layout.painel_status(jogador)
 
     layout.esperar_enter("[dim]Pressione Enter para iniciar o Capítulo 5...[/dim]")
+
+            # ================= CAPÍTULO 5 =================
+    layout.limpar_tela()
+    
+    jogador = capitulo_5.jogar(jogador)
+    if checar_morte(jogador):
+        return
+    
+    layout.limpar_tela()
+    layout.painel_status(jogador)
+
+    layout.esperar_enter("[dim]Pressione Enter para iniciar o Boss...[/dim]")
 
 if __name__ == "__main__":
     iniciar_jogo()
