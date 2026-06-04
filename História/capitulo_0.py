@@ -1,104 +1,138 @@
-# prologo.py
+# capitulo_0.py
 import time
 import random
+import sys
 import layout
 
-def rolar_atributos():
-    """Rola 1d6 para os 4 atributos e soma com a base 10."""
-    print("\nRolando seus atributos (Base 10 + 1d6)...")
-    time.sleep(1)
+def animacao_rolagem():
+    layout.console.print("[dim]Rolando os dados[/dim]", end="")
+    for _ in range(4):
+        time.sleep(0.3)
+        layout.console.print("[dim].[/dim]", end="")
+    print(" ") 
+
+def rolar_dados_rpg(quantidade, faces):
+    animacao_rolagem()
+    resultados = [random.randint(1, faces) for _ in range(quantidade)]
+    total = sum(resultados)
+    detalhes = " + ".join(map(str, resultados))
+    return total, detalhes
+
+def rolar_atributos_iniciais():
+    layout.limpar_tela()
+    layout.cabecalho("A FORJA DO DESTINO", "Sua linhagem desperta")
+    layout.imprimir_lento("[cyan]Os Kami tecem os fios do seu destino...[/cyan]")
     
-    atributos = {
-        "vitalidade": 10 + random.randint(1, 6),   # HP baseado na resiliência
-        "kenjutsu": 10 + random.randint(1, 6),     # Força e proficiência com a katana
-        "destreza": 10 + random.randint(1, 6),     # Agilidade, esquiva e acrobacia
-        "conhecimento": 10 + random.randint(1, 6), # Sabedoria mística e fraqueza de Yokais
-        "honra": 10                                # Honra estrita do Samurai
-    }
+    atributos = {}
     
-    print(f"- Vitalidade (HP): {atributos['vitalidade']}")
-    time.sleep(0.5)
-    print(f"- Kenjutsu (Dano/Ataque): {atributos['kenjutsu']}")
-    time.sleep(0.5)
-    print(f"- Destreza (Esquiva/Iniciativa): {atributos['destreza']}")
-    time.sleep(0.5)
-    print(f"- Conhecimento Yokai (Sabedoria): {atributos['conhecimento']}")
-    time.sleep(0.5)
-    print(f"- Honra (Alma do Samurai): {atributos['honra']}")
-    time.sleep(1)
+    layout.console.print("\n[bold red]VITALIDADE (HP)[/bold red] - Sua resistência física e fôlego.")
+    total_dados, detalhes = rolar_dados_rpg(3, 6)
+    atributos["max_vitalidade"] = 10 + total_dados
+    atributos["vitalidade"] = atributos["max_vitalidade"]
+    layout.console.print(f"[dim]Dados (3d6): [ {detalhes} ] = {total_dados}[/dim]")
+    layout.console.print(f"Total (Base 10 + {total_dados}): [bold red]{atributos['vitalidade']}[/bold red]")
+
+    layout.console.print("\n[bold white]KENJUTSU[/bold white] - Força bruta, maestria com a katana e poder de corte.")
+    total_dados, detalhes = rolar_dados_rpg(2, 6)
+    atributos["kenjutsu"] = 10 + total_dados
+    layout.console.print(f"[dim]Dados (2d6): [ {detalhes} ] = {total_dados}[/dim]")
+    layout.console.print(f"Total (Base 10 + {total_dados}): [bold white]{atributos['kenjutsu']}[/bold white]")
+
+    layout.console.print("\n[bold green]DESTREZA[/bold green] - Agilidade, esquiva, Parry e furtividade nas sombras.")
+    total_dados, detalhes = rolar_dados_rpg(2, 6)
+    atributos["destreza"] = 10 + total_dados
+    layout.console.print(f"[dim]Dados (2d6): [ {detalhes} ] = {total_dados}[/dim]")
+    layout.console.print(f"Total (Base 10 + {total_dados}): [bold green]{atributos['destreza']}[/bold green]")
+
+    layout.console.print("\n[bold magenta]CONHECIMENTO[/bold magenta] - Sabedoria tática, intuição folclórica e leitura de mundo.")
+    total_dados, detalhes = rolar_dados_rpg(2, 6)
+    atributos["conhecimento"] = 10 + total_dados
+    layout.console.print(f"[dim]Dados (2d6): [ {detalhes} ] = {total_dados}[/dim]")
+    layout.console.print(f"Total (Base 10 + {total_dados}): [bold magenta]{atributos['conhecimento']}[/bold magenta]")
+
+    layout.console.print("\n[bold cyan]ÉTER[/bold cyan] - Energia anímica da linhagem Shiro. Usada para magias.")
+    total_dados, detalhes = rolar_dados_rpg(3, 6)
+    atributos["eter"] = 20 + total_dados
+    layout.console.print(f"[dim]Dados (3d6): [ {detalhes} ] = {total_dados}[/dim]")
+    layout.console.print(f"Total (Base 20 + {total_dados}): [bold cyan]{atributos['eter']}[/bold cyan]")
     
+    layout.console.print("\n[bold yellow]Sua Ficha de Samurai foi gerada com sucesso![/bold yellow]")
+    layout.esperar_enter()
     return atributos
 
 def jogar(jogador):
-    layout.cabecalho("O DISCO DO ABISMO")
+    layout.cabecalho("PRÓLOGO", "O Silêncio da Neve")
     
     historia_parte_1 = (
-        "Tudo o que você sabe sobre o mundo lá fora são as palavras gravadas na sua mente "
-        "pela voz áspera do seu mestre, Kazunari. Ao redor da fogueira, cercados pela neve "
-        "eterna da Colina Lótus, ele costumava fechar os olhos cansados e lembrar.\n"
-        "'As terras de Takenoko respiravam paz', ele dizia, com um sorriso triste. "
-        "'Os camponeses colhiam arroz dourado sob um sol limpo. Os cinco Lordes governavam com "
-        "sabedoria sob a luz do seu pai, o Xogum Nobutatsu. Era um império de honra.'\n"
-        "Mas o rosto do mestre sempre escurecia ao mencionar o conselheiro. "
-        "'Eu nunca confiei em Kuroi Shin'en. Os olhos daquele sacerdote não refletiam a luz. "
-        "Ele fedia a túmulos antigos e feitiçaria, mas seu pai... seu pai foi cegado pela paranoia.'\n"
-        "Kazunari contava como Kuroi envenenou a mente do Xogum, sussurrando mentiras sobre uma "
-        "falsa rebelião dos Lordes. Com medo de perder o trono, Nobutatsu exigiu que as sete partes "
-        "do lendário Disco do Abismo fossem tomadas dos Lordes e trazidas para a capital, unindo-as "
-        "às três que ele mesmo guardava."
+        "O frio no cume da Colina Lótus corta como vidro. A tempestade mágica de [bold cyan]Éter Puro[/bold cyan] "
+        "que isolou este pico do resto de Takenoko por duas décadas finalmente cessou.\n"
+        "O silêncio que se seguiu foi ainda mais pesado.\n\n"
+        "Seu mestre, [bold yellow]Kazunari[/bold yellow], está morto.\n\n"
+        "O ex-capitão da Guarda Obsidiana passou os últimos vinte anos da vida dele te transformando "
+        "em uma arma. Você não aprendeu a brincar. Aprendeu a cair, a suportar o frio extremo e a empunhar "
+        "uma lâmina com a maestria cega de quem não tem mais nada a perder."
     )
     layout.imprimir_lento(historia_parte_1)
-    input("[Pressione Enter para continuar a ouvir a lembrança...]\n")
+    layout.esperar_enter()
 
     historia_parte_2 = (
-        "Foi a ruína de tudo. Ao juntar as dez partes do artefato, Kuroi revelou sua verdadeira face.\n"
-        "'Eu estava no pátio quando o céu apodreceu', lembrava Kazunari, apertando o coto do "
-        "próprio ombro esquerdo. 'As nuvens sangraram. Os portões do submundo foram arrancados de "
-        "suas dobradiças. Yokais, os demônios que achávamos ser apenas lendas de ninar, rasgaram o véu "
-        "e marcharam sobre nós. A capital foi engolida por trevas e fogo.'\n"
-        "Kuroi assassinou o Xogum. Ele precisava do sangue da linhagem sagrada do clã Shiro para "
-        "selar o poder do Disco para sempre. Mas Kazunari, banhado no sangue dos próprios irmãos de "
-        "armas, invadiu os aposentos reais. Ele pegou você, o filho mais novo, um bebê em prantos.\n"
-        "A fuga foi um pesadelo. Para cruzar os portões, Kazunari teve que enfrentar uma abominação "
-        "feita de sombras e ossos, invocada pelo próprio Kuroi. 'A fera me cobrou um preço alto', "
-        "ele suspirava, tocando o espaço vazio onde seu braço deveria estar. Mas com a outra mão, "
-        "ele segurava você e a Kagekiri, a lâmina sagrada do palácio. O preço foi pago."
+        "Ele costumava contar sobre a [bold red]Noite das Sombras[/bold red], quando o Alto Sacerdote [bold magenta]Kuroi Shin'en[/bold magenta] "
+        "abraçou o núcleo do Astrolábio Celestial, rasgando o véu dimensional. O Abismo inundou o mundo. "
+        "Seu pai, o Xogum Nobutatsu, foi assassinado.\n\n"
+        "Kazunari invadiu o palácio desmoronando e resgatou você – ainda um bebê – perdendo o braço "
+        "esquerdo para uma quimera no processo. Ele nunca foi um pai carinhoso. Seu afeto "
+        "vinha disfarçado de instrução militar brutal."
     )
     layout.imprimir_lento(historia_parte_2)
-    input("[Pressione Enter para continuar...]\n")
+    layout.esperar_enter()
 
     historia_parte_3 = (
-        "Por 20 anos, vocês não desceram a montanha. Kazunari exigiu de você o impossível. "
-        "Como ele lutava com apenas uma mão, ele lhe ensinou um Kenjutsu único, um estilo agressivo, "
-        "focado em destreza, evasão e golpes fatais. Ele lhe ensinou sobre os pontos fracos das "
-        "criaturas do folclore, preparando sua mente para a feitiçaria que dominava o mundo abaixo.\n"
-        "Mas o tempo é uma lâmina que corta até os guerreiros mais fortes. "
-        "Hoje, a tempestade de neve parou. O mestre Kazunari deu seu último suspiro.\n"
-        "Antes de partir, ele depositou a Kagekiri ('Corta-Sombras') em suas mãos. A katana, "
-        "forjada em aço de meteorito, brilhou com um leve tom azulado ao toque de um verdadeiro Shiro. "
-        "É a única arma capaz de purificar o feitiço de Kuroi."
+        "Você termina de erguer o túmulo de pedras brutas. O vento sopra da base da montanha, trazendo "
+        "um cheiro de cinzas e corrupção. O [bold]Shogunato de Cinza[/bold] estabelecido por Kuroi "
+        "governa o mundo lá embaixo administrando o próprio caos.\n\n"
+        "Aos pés do túmulo de Kazunari repousa a velha espada de meteorito que ele protegeu com a vida.\n"
+        "A [bold cyan]Kagekiri[/bold cyan] (Corta-Sombras)."
     )
     layout.imprimir_lento(historia_parte_3)
+    
+    layout.limpar_buffer_teclado()
+    layout.console.print("\nComo você se chama, último herdeiro do clã Shiro? (Aperte Enter para 'Ishido'): ", end="")
+    nome_input = input().strip()
+    jogador["nome"] = "Ishido" if nome_input == "" else nome_input
 
-    layout.imprimir_lento(
-        "Você termina de erguer o túmulo de pedras para Kazunari.\n"
-        "O vento sopra da base da montanha, trazendo o cheiro de cinzas e desespero.\n"
-        "Você não conhece aquele mundo. Mas aquele mundo está prestes a conhecer você."
+    layout.imprimir_lento(f"\nVocê envolve os dedos no cabo frio da espada, [bold]{jogador['nome']}[/bold].")
+    layout.tocar_sfx("audio/saque_espada.mp3") 
+    
+# (resto do seu capitulo_0.py)
+    historia_parte_4 = (
+        "\nNo instante em que sua pele toca a arma, o metal negro se ilumina. Uma linha de [bold cyan]Éter Puro[/bold cyan] "
+        "pulsa pela lâmina, reconhecendo o sangue vivo da sua linhagem.\n\n"
+        "Através da espada, você sente uma presença familiar. Kazunari fala diretamente na sua mente:\n"
+        "[italic white]'A Kagekiri transcende o plano físico. Ela foi forjada para cortar a alma.'[/italic white]\n\n"
+        "Você entende instintivamente: a Kagekiri congela o oponente de dentro para fora, "
+        "causando um dano elemental espiritual incalculável."
     )
-    
-    nome_input = input("\nComo você se chama, último herdeiro do clã Shiro? (Aperte Enter para usar 'Ishido'): ").strip()
-    if nome_input == "":
-        jogador["nome"] = "Ishido"
-    else:
-        jogador["nome"] = nome_input
+    layout.imprimir_lento(historia_parte_4)
 
-    layout.imprimir_lento(f"\nLevante-se, {jogador['nome']}.")
-    
-    # Atribuição dos dados rolados para o dicionário do jogador
-    novos_atributos = rolar_atributos()
+    layout.console.print("\n[bold cyan]*** VOCÊ APRENDEU O CONCEITO DE ÉTER ***[/bold cyan]")
+    layout.console.print("[dim]- Passos Fantasmas: Usado para correr sobre gelo fino ou desviar de ataques letais.[/dim]")
+    layout.console.print("[dim]- Lâmina de Gelo: Magia da Kagekiri que congela a alma e pula o turno inimigo.[/dim]")
+    layout.esperar_enter()
+
+    novos_atributos = rolar_atributos_iniciais()
     jogador.update(novos_atributos)
+    
+    # Inicializando as pools e arrays corretamente para o painel de status ler perfeito
+    jogador["xp"] = 0
+    jogador["max_eter"] = jogador.get("eter", 50)
+    jogador["habilidades"] = ["Passos Fant.", "Lâmina de Gelo", "Analisar Fraqueza"] # Habilidades iniciais
+    jogador["atributos_usados"] = set()
+    jogador["inventario"] = [] # Garantindo que a lista exista desde o começo
+    jogador["honra"] = 10 # Honra inicial
+    jogador["bonus_defesa"] = 0
 
-    layout.imprimir_lento(f"\nCom a Kagekiri embainhada, {jogador['nome']} dá o primeiro passo rumo à descida da Colina Lótus.")
-    layout.imprimir_lento("A caçada a Kuroi Shin'en começou.")
+    layout.limpar_tela()
+    layout.imprimir_lento("Com a [bold cyan]Kagekiri[/bold cyan] embainhada, você vira as costas para o túmulo do seu mestre.")
+    layout.imprimir_lento("[bold white]A descida da montanha vai começar. E o império corrompido de Takenoko sentirá o seu aço.[/bold white]")
     
     return jogador
