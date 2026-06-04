@@ -23,23 +23,29 @@ LARGURA_TELA = 80
 pygame.mixer.init()
 
 def tocar_musica(caminho_arquivo):
-    try:
-        pygame.mixer.music.load(caminho_arquivo)
-        pygame.mixer.music.play(-1)
-    except pygame.error:
-        # Falha ao carregar/rodar áudio (driver ausente ou arquivo inválido)
-        pass
+    """Toca uma música de fundo em loop apenas se o arquivo existir"""
+    if os.path.exists(caminho_arquivo):
+        try:
+            pygame.mixer.music.load(caminho_arquivo)
+            pygame.mixer.music.play(-1)
+        except Exception:
+            pass 
 
 def parar_musica():
-    pygame.mixer.music.stop()
+    """Para a música atual"""
+    try:
+        pygame.mixer.music.stop()
+    except Exception:
+        pass
 
 def tocar_sfx(caminho_arquivo):
-    try:
-        som = pygame.mixer.Sound(caminho_arquivo)
-        som.play()
-    except pygame.error as e:
-        # Propaga erro específico do pygame para o chamador tratar
-        raise pygame.error(f"Erro ao tocar efeito sonoro '{caminho_arquivo}': {e}") from e
+    """Toca um efeito sonoro rápido apenas se o arquivo existir"""
+    if os.path.exists(caminho_arquivo):
+        try:
+            som = pygame.mixer.Sound(caminho_arquivo)
+            som.play()
+        except Exception:
+            pass
 
 # ==========================================
 # INTERFACE E TECLADO
